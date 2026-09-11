@@ -70,6 +70,15 @@ export function Carousel({ photos }: { photos: Photo[] }) {
 
   const [open, setOpen] = useState<number | null>(null);
   const [centred, setCentred] = useState(0);
+  /**
+   * What to say out loud, and only when the guest did something.
+   *
+   * Kept separate from `centred` on purpose. `centred` changes as the page
+   * scrolls, and announcing it from there meant a screen reader reading out
+   * photograph names to somebody who was simply scrolling past the section
+   * on their way to the address.
+   */
+  const [announcement, setAnnouncement] = useState("");
   const [enhanced, setEnhanced] = useState(false);
 
   /* Each card's width as a multiple of the shared height. Clamped at both
@@ -341,18 +350,20 @@ export function Carousel({ photos }: { photos: Photo[] }) {
         // move. Without this the buttons changed the counter and nothing else.
         cards.current[next]?.scrollIntoView({ behavior: "auto", block: "nearest", inline: "center" });
         setCentred(next);
+        setAnnouncement(describe(photos, next));
         return;
       }
 
       held.current = next;
       position.current = next;
       setCentred(next);
+      setAnnouncement(describe(photos, next));
       if (settle.current !== null) window.clearTimeout(settle.current);
       settle.current = window.setTimeout(() => {
         held.current = null;
       }, 2200);
     },
-    [count, enhanced],
+    [count, enhanced, photos],
   );
 
   /* ── Nothing to show yet ────────────────────────────────────────────── */
@@ -522,9 +533,10 @@ export function Carousel({ photos }: { photos: Photo[] }) {
             </div>
           )}
 
-          {/* Said out loud, politely, when the photograph in front changes. */}
+          {/* Said out loud, politely, when the guest moves the reel — never
+              when the page merely scrolls past it. */}
           <p className="sr-only" aria-live="polite" aria-atomic="true">
-            {photos[centred]?.alt || `Photograph ${centred + 1}`}, {centred + 1} of {count}
+            {announcement}
           </p>
         </div>
       </div>
@@ -532,6 +544,13 @@ export function Carousel({ photos }: { photos: Photo[] }) {
       <Lightbox photos={photos} index={open} onClose={() => setOpen(null)} onIndex={setOpen} />
     </section>
   );
+}
+
+/** How a photograph is announced when the guest brings it to the front. */
+function describe(photos: Photo[], i: number): string {
+  const photo = photos[i];
+  if (!photo) return "";
+  return `${photo.alt || `Photograph ${i + 1}`}, ${i + 1} of ${photos.length}`;
 }
 
 /** A soft ivory fade at one end of the reel. */

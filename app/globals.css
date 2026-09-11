@@ -28,7 +28,11 @@
 :root {
   color-scheme: light;
   /* One shared page gutter, honoured by every section. */
-  --gutter: clamp(1.25rem, 5vw, 5rem);
+  /* The page opts into viewport-fit=cover so the film reaches the very edge
+     of a notched phone. That also means the notch and the home indicator sit
+     over the page, so the gutter has to clear them — otherwise the venue
+     address runs under the camera housing on a phone held sideways. */
+  --gutter: max(clamp(1.25rem, 5vw, 5rem), env(safe-area-inset-left), env(safe-area-inset-right));
   --rule: color-mix(in oklab, var(--color-gold) 34%, transparent);
 }
 
