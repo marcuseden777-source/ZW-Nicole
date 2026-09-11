@@ -83,7 +83,12 @@ export default async function Page() {
                 { id: "story-heading", label: "Our Story" },
                 { id: "carousel-heading", label: "Moments" },
                 { id: "gallery-heading", label: "The Day" },
-                { id: "guestbook-heading", label: "In Their Words" },
+                // Guestbook renders nothing until somebody has written
+                // something, so listing it unconditionally gave the menu an
+                // entry that scrolled nowhere.
+                ...(content.guestbook.length
+                  ? [{ id: "guestbook-heading", label: "In Their Words" }]
+                  : []),
                 { id: "venue-heading", label: "Getting There" },
               ]
         }

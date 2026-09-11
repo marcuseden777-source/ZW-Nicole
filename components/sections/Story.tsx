@@ -6,7 +6,7 @@ import { useEffect, useRef } from "react";
 import { AmbientFilm } from "@/components/AmbientFilm";
 import { Divider, SealMark } from "@/components/ui/Ornaments";
 import { useCapability } from "@/lib/useCapability";
-import { useSectionProgress } from "@/lib/useSectionProgress";
+import { useNearViewport } from "@/lib/useNearViewport";
 import * as content from "@/content/wedding";
 import type { FilmSources } from "@/lib/media";
 
@@ -28,21 +28,56 @@ const ParchmentScroll = dynamic(
  * frame instead of two hundred React renders.
  */
 export function Story({ film }: { film: FilmSources | null }) {
-  const { ref, progress } = useSectionProgress<HTMLDivElement>();
+  const { ref: nearRef, near } = useNearViewport<HTMLElement>();
   const capability = useCapability();
+  const ref = useRef<HTMLDivElement>(null);
   const prose = useRef<HTMLDivElement>(null);
   const live = useRef(0);
 
-  const useWebGL = capability.ready && capability.webgl && content.motion.webgl;
+  // The parchment is a WebGL context and a render loop. It should exist while
+  // the story is being read and not for the whole visit — it used to mount on
+  // page load and draw continuously, several screens below a guest who was
+  // still looking at a sealed envelope.
+  const useWebGL = near && capability.ready && capability.webgl && content.motion.webgl;
 
+  /* How far through the story the reader is, written straight to the element
+     every frame.
+     
+     Deliberately not React state. This drives one custom property, which in
+     turn fades in one hundred and eighty-odd words — and putting it through
+     state re-rendered that entire tree of spans, and re-split the story text
+     to build it, sixty times a second for as long as the section was on
+     screen. One property write costs nothing; the render behind it cost
+     everything. */
   useEffect(() => {
-    live.current = progress;
     const el = prose.current;
     if (!el) return;
-    // Reduced motion gets the whole story at once — the words are the point,
-    // the sequence is decoration.
-    el.style.setProperty("--told", capability.reducedMotion ? "1" : String(progress));
-  }, [progress, capability.reducedMotion]);
+
+    if (capability.reducedMotion) {
+      // The words are the point; the sequence is decoration. Show it all.
+      el.style.setProperty("--told", "1");
+      live.current = 1;
+      return;
+    }
+    if (!near) return;
+
+    let frame = 0;
+    let last = -1;
+    const tick = () => {
+      const box = ref.current?.getBoundingClientRect();
+      if (box && box.height > 0) {
+        const told = Math.min(1, Math.max(0, (window.innerHeight / 2 - box.top) / box.height));
+        if (Math.abs(told - last) > 0.002) {
+          last = told;
+          live.current = told;
+          el.style.setProperty("--told", told.toFixed(4));
+        }
+      }
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [near, capability.reducedMotion]);
 
   if (!content.story.enabled || !content.story.paragraphs.length) return null;
 
@@ -53,6 +88,7 @@ export function Story({ film }: { film: FilmSources | null }) {
 
   return (
     <section
+      ref={nearRef}
       aria-labelledby="story-heading"
       className="relative z-[1] overflow-hidden px-[var(--gutter)] py-[clamp(3rem,10vh,7rem)]"
     >

@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { AmbientFilm } from "@/components/AmbientFilm";
 import { CornerSpray, Divider, SealMark } from "@/components/ui/Ornaments";
 import { useCapability } from "@/lib/useCapability";
+import { useNearViewport } from "@/lib/useNearViewport";
 import * as content from "@/content/wedding";
 import type { Phase } from "@/content/wedding";
 import type { FilmSources } from "@/lib/media";
@@ -17,10 +18,14 @@ const SealScene = dynamic(
 
 export function Closing({ phase, film }: { phase: Phase; film: FilmSources | null }) {
   const capability = useCapability();
-  const useWebGL = capability.ready && capability.webgl && content.motion.webgl;
+  const { ref: nearRef, near } = useNearViewport<HTMLElement>();
+  // Not merely "is WebGL available" — also "is anyone anywhere near this".
+  // It used to mount on page load and render for the whole visit, several
+  // screens below a guest who was still looking at the envelope.
+  const useWebGL = near && capability.ready && capability.webgl && content.motion.webgl;
 
   return (
-    <footer className="relative z-[1] overflow-hidden px-[var(--gutter)] pb-[clamp(3rem,9vh,6rem)] pt-[clamp(3rem,10vh,7rem)]">
+    <footer ref={nearRef} className="relative z-[1] overflow-hidden px-[var(--gutter)] pb-[clamp(3rem,9vh,6rem)] pt-[clamp(3rem,10vh,7rem)]">
       <AmbientFilm film={film} opacity={content.ambient.closing.opacity} />
 
       <CornerSpray className="pointer-events-none absolute left-0 top-0 h-20 w-28 opacity-40 sm:-left-8 sm:h-28 sm:w-40" />
