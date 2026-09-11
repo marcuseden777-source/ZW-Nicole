@@ -263,7 +263,41 @@ export const envelope = {
 };
 
 /* ───────────────────────────────────────────────────────────────────────────
- * 16.  M O T I O N
+ * 16.  T H E   L A N D I N G   F I L M
+ *
+ *  The film behind the sealed envelope. Two cuts: one framed for laptops,
+ *  one for phones — the browser downloads only the one it needs.
+ *
+ *  Both are muted and looping, because every browser refuses to autoplay
+ *  anything with sound. A guest who has asked their phone for reduced motion
+ *  is shown the still poster frame instead, never the moving film.
+ *
+ *  Each cut ships twice. WebM/VP9 is offered first — it is roughly half the
+ *  size and plays in Chrome, Firefox, Edge and Android; H.264 follows for
+ *  Safari and iOS, which do not take VP9. Between them every guest is covered.
+ *
+ *  Replacing them: drop new files into /public/hero and keep the names. Do
+ *  not ship H.265 — the originals were H.265, which plays in Safari but not
+ *  in Chrome on Windows or Android, and not in Firefox at all.
+ * ─────────────────────────────────────────────────────────────────────────── */
+export const heroFilm = {
+  enabled: true,
+  desktop: {
+    webm: "/hero/landing-desktop.webm",
+    mp4: "/hero/landing-desktop.mp4",
+    poster: "/hero/landing-desktop.jpg",
+  },
+  mobile: {
+    webm: "/hero/landing-mobile.webm",
+    mp4: "/hero/landing-mobile.mp4",
+    poster: "/hero/landing-mobile.jpg",
+  },
+  // How far the film is dimmed so the cream envelope reads against it, 0–1.
+  scrim: 0.42,
+};
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * 17.  M O T I O N
  *
  *  Set `webgl` to false for the quieter version — the site keeps its whole
  *  design and simply stops rendering the three-dimensional layer.

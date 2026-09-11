@@ -42,13 +42,15 @@ export default function Page() {
       <main>
         <Hero />
         <Welcome />
+
+        {phase === "invitation" && <Countdown />}
+
         <Invitation />
         <Story />
 
         {phase === "invitation" ? (
           <>
             <Timeline />
-            <Countdown />
             <Venue />
             <Faq />
             <Rsvp />

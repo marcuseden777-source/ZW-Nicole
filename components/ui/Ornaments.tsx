@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import { envelope as envelopeStyle } from "@/content/wedding";
+
 /* ═══════════════════════════════════════════════════════════════════════
  *  The decorative vocabulary: arches, lanterns, rules and the monogram.
  *  All drawn as inline SVG — they scale to any screen without a single
@@ -110,21 +112,23 @@ export function SealMark({
   return (
     <svg viewBox="0 0 100 100" className={className} role="img" aria-label={`${monogram} monogram`}>
       <defs>
-        <radialGradient id="seal-wax" cx="38%" cy="32%" r="72%">
-          <stop offset="0%" stopColor="#f3e2c4" />
-          <stop offset="55%" stopColor="#e0c99e" />
-          <stop offset="100%" stopColor="#c2a15b" />
+        {/* The same oxblood as the wax on the three-dimensional envelope —
+            a guest on the fallback should not meet a different seal. */}
+        <radialGradient id="seal-wax" cx="38%" cy="30%" r="74%">
+          <stop offset="0%" stopColor="#a8414a" />
+          <stop offset="48%" stopColor={envelopeStyle.waxColor} />
+          <stop offset="100%" stopColor="#5e161c" />
         </radialGradient>
       </defs>
       <polygon points={points} fill="url(#seal-wax)" />
-      <circle cx="50" cy="50" r="38" fill="none" stroke="#9a7838" strokeWidth="0.8" strokeOpacity="0.6" />
+      <circle cx="50" cy="50" r="38" fill="none" stroke="#4d1217" strokeWidth="0.9" strokeOpacity="0.55" />
       <text
         x="50"
         y="50"
         textAnchor="middle"
         dominantBaseline="central"
-        fill="#8a6b2f"
-        fillOpacity="0.85"
+        fill="#4d1217"
+        fillOpacity="0.7"
         style={{ fontFamily: "var(--font-script), cursive", fontSize: "34px" }}
       >
         {monogram}
@@ -180,6 +184,47 @@ export function CornerSpray({
           <circle cx={cx} cy={cy} r={r * 0.2} fill="#c2a15b" fillOpacity="0.7" />
         </g>
       ))}
+    </svg>
+  );
+}
+
+/**
+ * A rose in bud, drawn small enough to sit on a hairline.
+ *
+ * Used as the marker that travels down the schedule as the page is read, so
+ * it has to hold its shape at around twenty pixels — which is why the petals
+ * are a handful of spirals rather than a botanical study.
+ */
+export function Rose({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 48 62" className={className} aria-hidden="true">
+      <defs>
+        <radialGradient id="rose-bloom" cx="42%" cy="34%" r="68%">
+          <stop offset="0%" stopColor="#f6e4bb" />
+          <stop offset="45%" stopColor="#d8b268" />
+          <stop offset="100%" stopColor="#9a7838" />
+        </radialGradient>
+      </defs>
+
+      {/* Stem and leaves */}
+      <g stroke="#9a7838" fill="none" strokeWidth="1.4" strokeLinecap="round">
+        <path d="M24 30 V60" />
+        <path d="M24 44 Q14 42 11 34 Q21 33 24 41" fill="#c2a15b" fillOpacity="0.32" />
+        <path d="M24 50 Q34 48 37 40 Q27 39 24 47" fill="#c2a15b" fillOpacity="0.32" />
+      </g>
+
+      {/* The outer petals, then the spiral of the bud */}
+      <g>
+        <path
+          d="M24 4 Q40 8 41 20 Q42 33 24 36 Q6 33 7 20 Q8 8 24 4 Z"
+          fill="url(#rose-bloom)"
+        />
+        <g fill="none" stroke="#8a6b2f" strokeOpacity="0.55" strokeWidth="1.1" strokeLinecap="round">
+          <path d="M24 32 Q13 29 13 20 Q13 11 24 9 Q35 11 35 20 Q35 27 26 29" />
+          <path d="M26 29 Q19 28 19 21 Q19 15 24 14 Q30 15 30 21 Q30 25 25 25" />
+          <path d="M25 25 Q22 24 22 21 Q22 19 24 19" />
+        </g>
+      </g>
     </svg>
   );
 }

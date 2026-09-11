@@ -1,6 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { HeroFilm } from "@/components/HeroFilm";
 import { useCapability } from "@/lib/useCapability";
 import { useScrollProgress } from "@/lib/useScrollProgress";
 import { Divider, SealMark } from "@/components/ui/Ornaments";
@@ -13,8 +15,14 @@ const Scene = dynamic(() => import("@/components/three/Scene").then((m) => m.Sce
 });
 
 export function Hero() {
-  const { ref, progress, live } = useScrollProgress<HTMLDivElement>();
+  const { ref, progress: scrolled, live } = useScrollProgress<HTMLDivElement>();
   const capability = useCapability();
+  const { opened, open, openedProgress } = useOpenOnClick();
+
+  // Either gesture opens the letter: a tap, or simply reading on. Whichever
+  // has gone further wins, so the two never fight each other.
+  const progress = Math.max(scrolled, openedProgress);
+  live.current = Math.max(live.current, openedProgress);
 
   const useWebGL = capability.ready && capability.webgl && content.motion.webgl;
   const petalCount = capability.lowPower
@@ -34,6 +42,8 @@ export function Hero() {
       className="relative h-[260vh]"
     >
       <div className="sticky top-0 flex h-[100svh] items-center justify-center overflow-hidden">
+        <HeroFilm reducedMotion={capability.reducedMotion} />
+
         {useWebGL ? (
           <div className="absolute inset-0" data-no-print>
             <Scene
@@ -57,7 +67,9 @@ export function Hero() {
             // actually arrived; the same words are repeated under the arch.
             aria-hidden="true"
           >
-            <p className="u-eyebrow mb-5">{content.opening.eyebrow}</p>
+            <p className="u-eyebrow mb-5" style={{ color: "var(--color-champagne)" }}>
+              {content.opening.eyebrow}
+            </p>
             <h1 className="u-script u-foil text-[clamp(3rem,12vw,7rem)]">
               <span className="block">{content.couple.partnerOne.name}</span>
               <span className="my-1 block text-[0.45em] not-italic">
@@ -66,24 +78,47 @@ export function Hero() {
               <span className="block">{content.couple.partnerTwo.name}</span>
             </h1>
             <Divider className="mx-auto my-7" />
-            <p className="u-display text-[clamp(0.85rem,2.6vw,1.05rem)] tracking-[0.2em] text-ink-soft uppercase">
+            <p
+              className="u-display text-[clamp(0.85rem,2.6vw,1.05rem)] uppercase tracking-[0.2em]"
+              style={{ color: "var(--color-parchment)" }}
+            >
               {content.weddingDate.display}
             </p>
           </div>
         </div>
 
-        {/* Scroll prompt */}
+        {/* The whole envelope is the control. A guest should not have to
+            discover that scrolling is the only way in — and a keyboard or
+            screen-reader user could not have discovered it at all. */}
+        {!opened && (
+          <button
+            type="button"
+            onClick={open}
+            className="absolute inset-0 z-20 cursor-pointer"
+            style={{ opacity: promptOpacity }}
+            data-no-print
+          >
+            <span className="sr-only">
+              Open the invitation from {content.couple.partnerOne.name} and{" "}
+              {content.couple.partnerTwo.name}
+            </span>
+          </button>
+        )}
+
+        {/* Prompt */}
         <div
           className="pointer-events-none absolute bottom-[clamp(1.5rem,5vh,3rem)] left-0 right-0 z-10 flex flex-col items-center gap-2"
           style={{ opacity: promptOpacity }}
           data-no-print
         >
-          <p className="u-eyebrow">Scroll to open</p>
+          <p className="u-eyebrow" style={{ color: "var(--color-parchment)" }}>
+            Tap to open
+          </p>
           <svg viewBox="0 0 24 32" className="h-7 w-5" aria-hidden="true">
             <path
               d="M12 4 V24 M5 17 L12 25 L19 17"
               fill="none"
-              stroke="#c2a15b"
+              stroke="var(--color-champagne)"
               strokeWidth="1.2"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -193,4 +228,45 @@ function PaperEnvelope({ openness, monogram }: { openness: number; monogram: str
       </div>
     </div>
   );
+}
+
+/**
+ * Opening the letter by hand.
+ *
+ * A tap runs the same 0→1 the scroll drives, over a couple of unhurried
+ * seconds — long enough for the wax to give, the flap to swing and the card
+ * to rise, which is the whole point of the gesture.
+ */
+function useOpenOnClick() {
+  const [opened, setOpened] = useState(false);
+  const [openedProgress, setOpenedProgress] = useState(0);
+  const startedAt = useRef(0);
+
+  const open = useCallback(() => setOpened(true), []);
+
+  useEffect(() => {
+    if (!opened) return;
+
+    // Reduced motion means arriving, not travelling.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setOpenedProgress(1);
+      return;
+    }
+
+    const DURATION = 2600;
+    startedAt.current = performance.now();
+    let frame = 0;
+
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - startedAt.current) / DURATION);
+      // Eased out, so the flap settles rather than stopping dead.
+      setOpenedProgress(1 - Math.pow(1 - t, 3));
+      if (t < 1) frame = requestAnimationFrame(tick);
+    };
+
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [opened]);
+
+  return { opened, open, openedProgress };
 }
