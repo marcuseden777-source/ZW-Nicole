@@ -19,8 +19,9 @@ the questions guests ask, the colour of the wax. Heavily commented, with no
 code anywhere near it. Change a value, save, done.
 
 **The pictures and the films are not in a file at all — they are folders.**
-Drop photographs into `public/gallery` and films into `public/ambient`, and
-the site finds them when it builds. It reads each picture's real proportions
+Drop photographs into `public/gallery` (the *Moments* reel) or
+`public/gallery/the-day` (the wall, after the wedding), and films into
+`public/ambient`, and the site finds them when it builds. It reads each picture's real proportions
 out of the file, takes the caption from the filename, makes a blurred
 placeholder, and works out which films exist and in which cuts. Nobody has to
 measure a photograph or write a line of TypeScript to add one. Empty folders

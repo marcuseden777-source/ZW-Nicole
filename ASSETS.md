@@ -16,11 +16,22 @@ shows today.
 Drop image files into **`/public/gallery`**. That is the whole procedure.
 
 ```
-public/gallery/
+public/gallery/                      ← the Moments reel
   01 — Signing the register.jpg
   02 — The first look.jpg
   03 — Tea ceremony.jpg
+
+  the-day/                           ← the keepsake wall, after the wedding
+    01 — Walking in.jpg
+    02 — The speeches.jpg
 ```
+
+Two folders because they are two sets. `gallery` holds the pictures the couple
+already have of each other, and the *Moments* reel shows them before the
+wedding and after. `gallery/the-day` holds the photographs of the wedding
+itself, which the *The Day* wall shows once the site is switched to its
+keepsake phase. Filling one does not fill the other, and the same photograph
+never appears twice on the same page.
 
 The site works out for itself:
 
@@ -37,9 +48,11 @@ read "I M G 4471" aloud to someone who cannot see the picture.
 
 JPEG, PNG, WebP, AVIF and GIF are all understood.
 
-**Where they appear.** Before the wedding they are the *Moments* reel. After it
-— when the site is switched to its keepsake phase — they are also the *The Day*
-gallery wall. Same files, both places, nothing to duplicate.
+**If a file cannot be read**, it is left out rather than shown broken — and
+the build log names it and says why. Nothing disappears from a wedding gallery
+without an explanation. HEIC straight off an iPhone works only if the build's
+copy of sharp was compiled with libheif; if the log says a HEIC was dropped,
+exporting it as JPEG will fix it.
 
 ---
 
