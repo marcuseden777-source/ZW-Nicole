@@ -219,7 +219,14 @@ export const contacts = {
  *  breaking, so the switch to "keepsake" is safe at any time.
  * ─────────────────────────────────────────────────────────────────────────── */
 export const gallery: { src: string; alt: string; span?: "wide" | "tall" }[] = [
-  // { src: "/gallery/01.jpg", alt: "Zhi Wei and Nicole at sunrise on the water", span: "wide" },
+  // Drop photographs into /public/gallery and list them here. They appear in
+  // the Moments carousel, which turns as the page is read and opens each one
+  // full-size on a tap.
+  //
+  // `alt` is read aloud by screen readers and shown if an image fails to
+  // load — write it as you would describe the photo to someone on the phone.
+  //
+  // { src: "/gallery/01.jpg", alt: "Zhi Wei and Nicole at sunrise on the water" },
 ];
 
 /* A film from the day — a YouTube or Vimeo embed link. "" leaves it out. */

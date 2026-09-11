@@ -1,9 +1,11 @@
 import { EntryGate } from "@/components/EntryGate";
+import { World } from "@/components/World";
 import { SkipLink } from "@/components/SkipLink";
 import { GateBoundary } from "@/components/GateBoundary";
 import { Nav } from "@/components/Nav";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { Closing } from "@/components/sections/Closing";
+import { Carousel } from "@/components/sections/Carousel";
 import { Countdown } from "@/components/sections/Countdown";
 import { Faq } from "@/components/sections/Faq";
 import { Hero } from "@/components/sections/Hero";
@@ -40,6 +42,9 @@ export default function Page() {
 
       <SmoothScroll />
 
+      {/* One scene the whole document scrolls through, behind everything. */}
+      <World />
+
       {/* The shortcut for the guest in a taxi who wants the address and
           nothing else. Appears only once the door is open. */}
       <Nav
@@ -48,6 +53,7 @@ export default function Page() {
             ? [
                 { id: "welcome-heading", label: "The Invitation" },
                 { id: "story-heading", label: "Our Story" },
+                { id: "carousel-heading", label: "Moments" },
                 { id: "timeline-heading", label: "The Day" },
                 { id: "venue-heading", label: "Getting There" },
                 { id: "faq-heading", label: "Good to Know" },
@@ -56,6 +62,7 @@ export default function Page() {
             : [
                 { id: "welcome-heading", label: "The Invitation" },
                 { id: "story-heading", label: "Our Story" },
+                { id: "carousel-heading", label: "Moments" },
                 { id: "gallery-heading", label: "The Day" },
                 { id: "guestbook-heading", label: "In Their Words" },
                 { id: "venue-heading", label: "Getting There" },
@@ -75,6 +82,7 @@ export default function Page() {
         {phase === "invitation" && <Countdown />}
 
         <Story />
+        <Carousel />
 
         {phase === "invitation" ? (
           <>
