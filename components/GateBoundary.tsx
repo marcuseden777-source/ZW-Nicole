@@ -25,6 +25,8 @@ export class GateBoundary extends Component<{ children: ReactNode }, { failed: b
   componentDidCatch(error: unknown) {
     // Release first, explain second — the guest's page matters more than the log.
     releaseScrollLock();
+    // If the door itself threw, nothing else is going to reveal the page.
+    document.documentElement.classList.remove("gating");
     setEntered(true);
     console.error("[gate] failed, falling through to the invitation:", error);
   }

@@ -299,3 +299,16 @@ html.js .u-reveal[data-shown="true"] {
     display: none;
   }
 }
+
+/* Held until the door has decided whether it is going to exist.
+
+   The gate is client-only and mounts after hydration, so the hero underneath
+   it painted first — on a throttled phone, for about a second and a half —
+   and the envelope then dropped over the couple's names. `visibility` rather
+   than `display` so the page is still laid out and nothing shifts when it
+   appears. The class is granted before first paint and removed the moment the
+   gate knows its answer, with a four-second dead-man's switch behind it. It
+   is never set at all without JavaScript. */
+html.gating #site-root {
+  visibility: hidden;
+}

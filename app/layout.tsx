@@ -104,19 +104,27 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/*
           Runs before first paint, so there is no flash of revealed content.
 
-          Two jobs. It grants `html.js`, which is what licenses the scroll
+          Three jobs. It grants `html.js`, which is what licenses the scroll
           reveals to start hidden — without it every section stays visible,
           so a guest with no JavaScript reads a complete invitation.
 
+          It also grants `html.gating`, which holds the page behind the door
+          until the door has decided whether there is going to be one. The
+          gate is client-only, so on a mid-range phone the hero was painting
+          about a second and a half before the envelope arrived over the top
+          of it — the guest saw the film and the couple's names, and then a
+          sealed envelope dropped over them. That is the sequence backwards.
+
           And it sets a dead-man's switch: if React has not booted within
           four seconds (a 404'd chunk, a dropped connection at the venue),
-          the class is dropped and everything becomes visible anyway. The
-          reveal hook clears the timer the moment it runs.
+          both classes are dropped and everything becomes visible anyway.
+          Neither class exists without JavaScript at all, so a guest without
+          it is never waiting on either.
         */}
         <script
           dangerouslySetInnerHTML={{
             __html:
-              'document.documentElement.className+=" js";window.__zwReveal=setTimeout(function(){document.documentElement.classList.remove("js")},4000)',
+              'document.documentElement.className+=" js gating";window.__zwReveal=setTimeout(function(){document.documentElement.classList.remove("js");document.documentElement.classList.remove("gating")},4000)',
           }}
         />
       </head>

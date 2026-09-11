@@ -44,6 +44,19 @@ export function EntryGate({ bloom }: { bloom: FilmSources | null }) {
 
   const button = useRef<HTMLButtonElement>(null);
 
+  // The page is held hidden from before first paint until the door is
+  // actually up — or until it is settled that there will not be one, because
+  // they asked for reduced motion or have already come through this session.
+  //
+  // Deliberately not released on "the device has been measured": that is one
+  // commit earlier than the door rendering, and the page showed through the
+  // gap. `mounted` and `done` are the two states where releasing is safe,
+  // and this effect runs after the commit that produced them.
+  useEffect(() => {
+    if (!mounted && stage !== "done") return;
+    document.documentElement.classList.remove("gating");
+  }, [mounted, stage]);
+
   // Send focus to the door as soon as it exists, so a keyboard guest is not
   // tabbing blindly through a page they cannot see.
   useEffect(() => {
