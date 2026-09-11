@@ -62,7 +62,13 @@ export const couple = {
  * ─────────────────────────────────────────────────────────────────────────── */
 export const weddingDate = {
   // The first guests arrive for the cocktail reception at 11:30.
-  iso: "2026-10-11T11:30",
+  //
+  // The "+08:00" matters and must stay. Without an offset, every browser
+  // reads this as 11:30 in ITS OWN timezone — so the countdown and the
+  // "Save the date" file would have told a guest in London to be somewhere
+  // seven hours after the wedding started. It is one instant in time now,
+  // and it is the same instant wherever it is read.
+  iso: "2026-10-11T11:30:00+08:00",
   display: "Sunday, the Eleventh of October",
   year: "Two Thousand & Twenty-Six",
   place: "Singapore",

@@ -79,56 +79,70 @@ body::before {
   border-radius: 2px;
 }
 
-/* ── Typography helpers ──────────────────────────────────────── */
+/* ── Typography helpers ──────────────────────────────────────────
+   Inside @layer components deliberately.
 
-.u-eyebrow {
-  font-family: var(--font-sans);
-  /* Floor of 0.78rem — 12.5px. Wide tracking on type below 12px is where
-     small caps stop being elegant and start being unreadable, and this
-     carries the date, the venue and the scroll cue. */
-  font-size: clamp(0.78rem, 1.5vw, 0.84rem);
-  font-weight: 400;
-  /* Eased from 0.34em: the extra size does the work that tracking was
-     being asked to do. */
-  letter-spacing: 0.26em;
-  text-transform: uppercase;
-  /* One step darker than ink-faint, so it clears AA against ivory. */
-  color: var(--color-ink-soft);
-}
+   Unlayered CSS beats every layered rule no matter how specific, and
+   Tailwind's utilities all live in @layer utilities. So while these sat
+   outside a layer, `.u-eyebrow` quietly won every argument with a utility
+   for the properties it sets — and `text-white` on the RSVP button lost to
+   its `color: var(--color-ink-soft)`. That put the one control the whole
+   invitation exists to be pressed at 1.23:1: ink on gold, effectively
+   invisible. `normal-case` and `tracking-[0.14em]` were being ignored the
+   same way, wherever anyone had asked for them.
 
-.u-script {
-  font-family: var(--font-script);
-  font-weight: 400;
-  line-height: 0.92;
-  /* Script faces sit low; nudge the optical baseline back up. */
-  letter-spacing: 0.01em;
-}
+   Layered, a utility wins, which is what anyone writing one expects.
+   ──────────────────────────────────────────────────────────────── */
+@layer components {
+  .u-eyebrow {
+    font-family: var(--font-sans);
+    /* Floor of 0.78rem — 12.5px. Wide tracking on type below 12px is where
+       small caps stop being elegant and start being unreadable, and this
+       carries the date, the venue and the scroll cue. */
+    font-size: clamp(0.78rem, 1.5vw, 0.84rem);
+    font-weight: 400;
+    /* Eased from 0.34em: the extra size does the work that tracking was
+       being asked to do. */
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    /* One step darker than ink-faint, so it clears AA against ivory. */
+    color: var(--color-ink-soft);
+  }
 
-.u-display {
-  font-family: var(--font-display);
-  font-weight: 300;
-  letter-spacing: 0.01em;
-}
+  .u-script {
+    font-family: var(--font-script);
+    font-weight: 400;
+    line-height: 0.92;
+    /* Script faces sit low; nudge the optical baseline back up. */
+    letter-spacing: 0.01em;
+  }
 
-/* Gold foil — a real gradient with a highlight running through it,
-   not a flat swatch pretending to be metal. */
-.u-foil {
-  /* A real foil needs a highlight, but the old one (#f6e4bb) sat at 1.18:1
-     on ivory — a band straight through every letter that simply was not
-     there. Narrowed and darkened: it still reads as struck metal, and now
-     the faintest part of a letter is about 2.4:1 rather than invisible. */
-  background: linear-gradient(
-    100deg,
-    var(--color-gold-ink) 0%,
-    #a8823c 26%,
-    #d9bc7e 46%,
-    #d9bc7e 52%,
-    #a8823c 72%,
-    var(--color-gold-ink) 100%
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  .u-display {
+    font-family: var(--font-display);
+    font-weight: 300;
+    letter-spacing: 0.01em;
+  }
+
+  /* Gold foil — a real gradient with a highlight running through it,
+     not a flat swatch pretending to be metal. */
+  .u-foil {
+    /* A real foil needs a highlight, but the old one (#f6e4bb) sat at 1.18:1
+       on ivory — a band straight through every letter that simply was not
+       there. Narrowed and darkened: it still reads as struck metal, and now
+       the faintest part of a letter is about 2.4:1 rather than invisible. */
+    background: linear-gradient(
+      100deg,
+      var(--color-gold-ink) 0%,
+      #a8823c 26%,
+      #d9bc7e 46%,
+      #d9bc7e 52%,
+      #a8823c 72%,
+      var(--color-gold-ink) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
 }
 
 /* ── Camera, not renderer ─────────────────────────────────────────

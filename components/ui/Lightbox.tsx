@@ -61,12 +61,19 @@ export function Lightbox({ photos, index, onClose, onIndex }: Props) {
      is in. */
   useEffect(() => {
     if (!open) return;
-    const outside = [
+    const candidates = [
       document.getElementById("site-root"),
       ...Array.from(document.querySelectorAll<HTMLElement>("[data-outside-overlay]")),
     ].filter((el): el is HTMLElement => el !== null);
-    outside.forEach((el) => el.setAttribute("inert", ""));
-    return () => outside.forEach((el) => el.removeAttribute("inert"));
+
+    // Only silence what was not already silent, and only give back what we
+    // took. The closed menu sets its own `inert` through React, and React
+    // will not put an attribute back that it still believes it set — so
+    // clearing it here once left eight invisible menu buttons in the tab
+    // order for the rest of the visit.
+    const silenced = candidates.filter((el) => !el.hasAttribute("inert"));
+    silenced.forEach((el) => el.setAttribute("inert", ""));
+    return () => silenced.forEach((el) => el.removeAttribute("inert"));
   }, [open]);
 
   /* Hold the document still — at the position the guest was already at, so

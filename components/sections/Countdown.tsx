@@ -65,7 +65,12 @@ export function Countdown() {
                   >
                     {String(value).padStart(2, "0")}
                   </p>
-                  <p className="u-eyebrow mt-2 text-[0.58rem]">{label}</p>
+                  {/* No size override. `text-[0.58rem]` here was 9.3px, under
+                      the 12px floor .u-eyebrow exists to hold — it only ever
+                      looked acceptable because an unlayered rule was quietly
+                      ignoring it. Tighter tracking does the same job of
+                      keeping the label subordinate to the number. */}
+                  <p className="u-eyebrow mt-2 tracking-[0.18em]">{label}</p>
                 </div>
               ))}
             </div>

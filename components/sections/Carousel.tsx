@@ -226,6 +226,39 @@ export function Carousel({ photos }: { photos: Photo[] }) {
     };
   }, [enhanced, count, centreAt]);
 
+  /* In the plain strip the browser owns the scrolling, so the counter follows
+     it rather than the other way round. */
+  useEffect(() => {
+    if (enhanced || count === 0) return;
+    const el = stage.current;
+    if (!el) return;
+
+    let frame = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const middle = el.scrollLeft + el.clientWidth / 2;
+        let best = 0;
+        let bestGap = Infinity;
+        cards.current.forEach((card, i) => {
+          if (!card) return;
+          const gap = Math.abs(card.offsetLeft + card.offsetWidth / 2 - middle);
+          if (gap < bestGap) {
+            bestGap = gap;
+            best = i;
+          }
+        });
+        setCentred(best);
+      });
+    };
+
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(frame);
+    };
+  }, [enhanced, count]);
+
   /* Steering by hand. A drag scrubs the reel; letting go settles it on the
      nearest photograph and hands control back to the scroll. */
   const drag = useRef<{ x: number; from: number } | null>(null);
@@ -239,26 +272,58 @@ export function Carousel({ photos }: { photos: Photo[] }) {
     [],
   );
 
+  /** True once the pointer has travelled far enough to be a drag, not a tap. */
+  const dragged = useRef(false);
+  /** Swallows the click that a browser fires at the end of a drag. */
+  const swallowClick = useRef(false);
+
   const onPointerDown = (event: React.PointerEvent) => {
     if (!enhanced || count < 2) return;
-    // Let a real click on the centred photograph through.
-    if ((event.target as HTMLElement).closest("[data-open-photo]")) return;
+    // Deliberately NOT skipped when the pointer lands on a card. Every card
+    // is a button covering its whole area, so refusing to start a drag there
+    // meant refusing to start one anywhere — the reel could not be swiped at
+    // all, which on a phone is the only way anybody would try to move it.
+    // Tap and drag are told apart afterwards, by distance.
     drag.current = { x: event.clientX, from: position.current };
+    dragged.current = false;
     held.current = position.current;
-    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
   };
 
   const onPointerMove = (event: React.PointerEvent) => {
     if (!drag.current) return;
+    const dx = event.clientX - drag.current.x;
+
+    if (!dragged.current) {
+      // A few pixels of slop, so a tap with an unsteady thumb is still a tap.
+      if (Math.abs(dx) < 6) return;
+      dragged.current = true;
+      (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+    }
+
     const height = stage.current?.getBoundingClientRect().height ?? 1;
-    // Divide by the height because the reel is measured in heights.
-    const moved = (event.clientX - drag.current.x) / (height * 0.85);
-    held.current = Math.max(0, Math.min(count - 1, drag.current.from - moved));
+    // Divided by the height because the reel is measured in heights.
+    held.current = Math.max(0, Math.min(count - 1, drag.current.from - dx / (height * 0.85)));
   };
 
   const endDrag = () => {
     if (!drag.current) return;
     drag.current = null;
+
+    if (!dragged.current) {
+      // It was a tap. Hand the reel straight back to the scroll and let the
+      // card's own click do its work.
+      held.current = null;
+      return;
+    }
+
+    // The browser fires a click after a drag ends. Without this, letting go
+    // of a swipe would open whichever photograph happened to be under the
+    // thumb.
+    swallowClick.current = true;
+    window.setTimeout(() => {
+      swallowClick.current = false;
+    }, 0);
+
     held.current = held.current === null ? null : Math.round(held.current);
     // Hold the settled position briefly, then let the scroll take over again.
     if (settle.current !== null) window.clearTimeout(settle.current);
@@ -270,6 +335,15 @@ export function Carousel({ photos }: { photos: Photo[] }) {
   const step = useCallback(
     (delta: number) => {
       const next = Math.max(0, Math.min(count - 1, Math.round(position.current) + delta));
+
+      if (!enhanced) {
+        // The plain strip is a real scroll container; there is no transform to
+        // move. Without this the buttons changed the counter and nothing else.
+        cards.current[next]?.scrollIntoView({ behavior: "auto", block: "nearest", inline: "center" });
+        setCentred(next);
+        return;
+      }
+
       held.current = next;
       position.current = next;
       setCentred(next);
@@ -278,7 +352,7 @@ export function Carousel({ photos }: { photos: Photo[] }) {
         held.current = null;
       }, 2200);
     },
-    [count],
+    [count, enhanced],
   );
 
   /* ── Nothing to show yet ────────────────────────────────────────────── */
@@ -387,7 +461,11 @@ export function Carousel({ photos }: { photos: Photo[] }) {
                       // others are reached with the buttons underneath, which
                       // is how a carousel is supposed to work.
                       tabIndex={enhanced && !isCentre ? -1 : 0}
-                      onClick={() => (enhanced && !isCentre ? step(i - centred) : setOpen(i))}
+                      onClick={() => {
+                        if (swallowClick.current) return;
+                        if (enhanced && !isCentre) step(i - centred);
+                        else setOpen(i);
+                      }}
                       className="group relative block h-full w-full overflow-hidden rounded-sm border bg-parchment shadow-[0_34px_70px_-38px_rgba(74,56,30,0.62)]"
                       style={{ borderColor: "var(--rule)" }}
                     >
