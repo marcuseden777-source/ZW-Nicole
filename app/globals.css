@@ -130,17 +130,21 @@ body::before {
   /* Gold foil — a real gradient with a highlight running through it,
      not a flat swatch pretending to be metal. */
   .u-foil {
-    /* A real foil needs a highlight, but the old one (#f6e4bb) sat at 1.18:1
-       on ivory — a band straight through every letter that simply was not
-       there. Narrowed and darkened: it still reads as struck metal, and now
-       the faintest part of a letter is about 2.4:1 rather than invisible. */
+    /* A real foil needs a highlight, and this one has been wrong twice.
+       #f6e4bb sat at 1.18:1 on ivory. #d9bc7e replaced it with a note
+       claiming the faintest part of a letter was "about 2.4:1" — measured, it
+       was 1.72:1, and held that value across the middle 41% of every glyph
+       run, so the centre of each heading read as a gap in the words. These
+       are large-text sizes, so the bar is 3:1; #b0863d is 3.11:1 on ivory and
+       3.32:1 on white, and the band is narrowed so the dark stops carry more
+       of each letter. It still reads as struck metal. */
     background: linear-gradient(
       100deg,
       var(--color-gold-ink) 0%,
-      #a8823c 26%,
-      #d9bc7e 46%,
-      #d9bc7e 52%,
-      #a8823c 72%,
+      #9c7735 32%,
+      #b0863d 47%,
+      #b0863d 53%,
+      #9c7735 68%,
       var(--color-gold-ink) 100%
     );
     -webkit-background-clip: text;
@@ -271,6 +275,26 @@ html.js .u-reveal[data-shown="true"] {
   .u-word {
     opacity: 1 !important;
     transform: none !important;
+  }
+
+  /* Foil is a gradient clipped to the glyphs, with the text itself set to
+     `transparent`. Print with background graphics off — which is the default
+     in most browsers' print dialogues — and the gradient is dropped and every
+     foiled line comes out invisible. On paper it is ink, not metal. */
+  .u-foil {
+    background: none !important;
+    -webkit-background-clip: border-box !important;
+    background-clip: border-box !important;
+    color: var(--color-gold-ink) !important;
+  }
+
+  /* The hero's names are near-white because they sit on the film. The film
+     and its dark ground are both [data-no-print], so on paper that cream text
+     would be printed onto white — an entirely blank first page. */
+  section[aria-labelledby="hero-heading"] h1,
+  section[aria-labelledby="hero-heading"] p {
+    color: var(--color-ink) !important;
+    text-shadow: none !important;
   }
 
   body {

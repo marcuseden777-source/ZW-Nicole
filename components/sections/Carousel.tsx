@@ -175,6 +175,14 @@ export function Carousel({ photos }: { photos: Photo[] }) {
         if (away > WINDOW) {
           // Far enough away to be nobody's business. Not painted, not read.
           if (el.style.visibility !== "hidden") {
+            // Hiding the element that currently has focus drops focus to
+            // <body> without saying so, which for a keyboard guest means
+            // their place in the page silently disappears mid-scroll. Hand
+            // it to the photograph in front first.
+            if (el.contains(document.activeElement)) {
+              const front = cards.current[Math.round(p)];
+              front?.querySelector<HTMLElement>("[data-open-photo]")?.focus({ preventScroll: true });
+            }
             el.style.visibility = "hidden";
             el.setAttribute("aria-hidden", "true");
           }

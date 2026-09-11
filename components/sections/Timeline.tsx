@@ -3,13 +3,14 @@
 import { Divider, Rose } from "@/components/ui/Ornaments";
 import { useSectionProgress } from "@/lib/useSectionProgress";
 import * as content from "@/content/wedding";
+import type { Phase } from "@/content/wedding";
 
 /**
  * The day, hour by hour, down a single gold thread — with a rose that travels
  * the thread as the page is read, so a guest can see at a glance where they
  * are in the day rather than reading three equally-weighted blocks.
  */
-export function Timeline() {
+export function Timeline({ phase }: { phase: Phase }) {
   const { ref, progress } = useSectionProgress<HTMLOListElement>();
 
   if (!content.timeline.length) return null;
@@ -32,7 +33,11 @@ export function Timeline() {
             id="timeline-heading"
             className="u-reveal u-script text-[clamp(2.5rem,9vw,4rem)] text-gold-deep"
           >
-            The Day
+            {/* In the keepsake phase the gallery wall is already called "The
+                Day". Two 4rem headings with the same words, three sections
+                apart, read as a mistake — and the schedule is no longer a
+                plan by then, it is a record of how the day ran. */}
+            {phase === "invitation" ? "The Day" : "How the Day Ran"}
           </h2>
           <p className="u-reveal u-eyebrow mt-4">{content.weddingDate.display}</p>
           <Divider className="mx-auto mt-5" />

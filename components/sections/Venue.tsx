@@ -1,8 +1,9 @@
 import { Divider } from "@/components/ui/Ornaments";
 import * as content from "@/content/wedding";
+import type { Phase } from "@/content/wedding";
 
 /** Where to come, how to get there, and a calendar entry to keep. */
-export function Venue() {
+export function Venue({ phase }: { phase: Phase }) {
   const calendarHref = buildCalendarLink();
 
   return (
@@ -58,7 +59,10 @@ export function Venue() {
               Open the map
             </a>
           )}
-          {calendarHref && (
+          {/* Only while it is still ahead of them. The address and the map
+              are worth keeping afterwards; an invitation to diarise a day
+              they have already been to is not. */}
+          {phase === "invitation" && calendarHref && (
             <a
               href={calendarHref}
               download="zhiwei-and-nicole.ics"

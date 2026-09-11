@@ -108,8 +108,8 @@ export default async function Page() {
 
         {phase === "invitation" ? (
           <>
-            <Timeline />
-            <Venue />
+            <Timeline phase={phase} />
+            <Venue phase={phase} />
             <Faq />
             <Rsvp />
           </>
@@ -117,8 +117,8 @@ export default async function Page() {
           <>
             <Gallery photos={dayPhotos} />
             <Guestbook />
-            <Timeline />
-            <Venue />
+            <Timeline phase={phase} />
+            <Venue phase={phase} />
           </>
         )}
         </main>

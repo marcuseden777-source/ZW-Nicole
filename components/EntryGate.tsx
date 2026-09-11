@@ -272,7 +272,11 @@ function PaperEnvelope({ openness, monogram }: { openness: number; monogram: str
       aria-hidden="true"
     >
       <div
-        className="relative aspect-[1/1.45] w-[min(74vw,24rem)]"
+        // Bounded by the viewport's height as well as its width. At 1:1.45,
+        // 24rem wide is 557px tall — taller than a phone held sideways, so
+        // the envelope was clipped at both ends and the seal could be off
+        // screen entirely.
+        className="relative aspect-[1/1.45] w-[min(74vw,24rem,58vh)]"
         style={{
           transformStyle: "preserve-3d",
           transform: `translateY(${-openness * 6}%) rotateX(${5 - openness * 3}deg)`,

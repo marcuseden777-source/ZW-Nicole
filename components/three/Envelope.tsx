@@ -99,14 +99,23 @@ export function Envelope({ openness, monogram }: Props) {
   const sealRight = useRef<THREE.Group>(null);
   const card = useRef<THREE.Group>(null);
 
-  const emboss = useMemo(() => createEmbossNormalMap(512), []);
+  // Built only if something is going to sample it. `envelopeStyle.emboss` is
+  // off — the reference envelope is smooth stock — so this was generating a
+  // 512x512 normal map on the door's critical path and throwing it away:
+  // roughly six hundred filtered canvas draws, a 262,144-pixel height-to-
+  // normal conversion and a megabyte of texture, between hydration and the
+  // moment the envelope becomes tappable, for a map no material reads.
+  const emboss = useMemo(
+    () => (envelopeStyle.emboss ? createEmbossNormalMap(512) : null),
+    [],
+  );
   const roughness = useMemo(() => createPaperRoughness(256), []);
   const relief = useMemo(() => createSealReliefMap(monogram, 512), [monogram]);
 
   // Canvas textures are not garbage collected by three — release them by hand.
   useEffect(
     () => () => {
-      emboss.dispose();
+      emboss?.dispose();
       roughness.dispose();
       relief.dispose();
     },
@@ -114,12 +123,12 @@ export function Envelope({ openness, monogram }: Props) {
   );
 
   const paper = useMemo(() => {
-    emboss.repeat.set(2.4, 3.2);
+    emboss?.repeat.set(2.4, 3.2);
     return new THREE.MeshPhysicalMaterial({
       color: envelopeStyle.paperColor,
       // The reference envelope is smooth stock, so the botanical relief is off
       // unless it is asked for in the content file.
-      normalMap: envelopeStyle.emboss ? emboss : null,
+      normalMap: emboss,
       normalScale: new THREE.Vector2(1.7, 1.7),
       roughnessMap: roughness,
       roughness: 0.94,

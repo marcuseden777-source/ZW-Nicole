@@ -21,7 +21,12 @@ export function Hero() {
       <HeroFilm reducedMotion={capability.reducedMotion} />
 
       <div className="relative z-10 flex h-full flex-col items-center justify-center px-[var(--gutter)] text-center">
-        <p className="u-eyebrow" style={{ color: "var(--color-champagne)" }}>
+        <p
+          className="u-eyebrow"
+          // Champagne is a page colour; over an open sky it measured 2.9:1.
+          // The names' cream, with the names' lift behind it.
+          style={{ color: "#fdf6e8", textShadow: "0 1px 12px rgba(26,19,10,0.85)" }}
+        >
           {content.opening.eyebrow}
         </p>
 
@@ -44,31 +49,40 @@ export function Hero() {
 
         <p
           className="u-display text-[clamp(0.85rem,2.6vw,1.05rem)] uppercase tracking-[0.24em]"
-          style={{ color: "var(--color-parchment)" }}
+          style={{ color: "#fdf6e8", textShadow: "0 1px 12px rgba(26,19,10,0.8)" }}
         >
           {content.weddingDate.display}
         </p>
-        <p className="u-eyebrow mt-3" style={{ color: "var(--color-champagne)" }}>
+        <p
+          className="u-eyebrow mt-3"
+          style={{ color: "#fdf6e8", textShadow: "0 1px 12px rgba(26,19,10,0.85)" }}
+        >
           {content.weddingDate.place}
         </p>
       </div>
 
       {/* Scroll cue */}
       <div
-        className="pointer-events-none absolute inset-x-0 bottom-[clamp(1.5rem,5vh,3rem)] z-10 flex flex-col items-center gap-2"
+        // Lifted clear of the band where the film hands over to the page
+        // colour. Sitting inside it, the cue had the lightest background on
+        // the whole hero behind it and measured 4.33:1 against the 4.5 it needs.
+        className="pointer-events-none absolute inset-x-0 bottom-[clamp(3rem,12vh,5.5rem)] z-10 flex flex-col items-center gap-2"
         data-no-print
         // Hidden on a screen too short to hold it and the date at once — see
         // the rule in globals.css. A phone held sideways is the case.
         data-scroll-cue
       >
-        <p className="u-eyebrow" style={{ color: "var(--color-champagne)" }}>
+        <p
+          className="u-eyebrow"
+          style={{ color: "#fdf6e8", textShadow: "0 1px 12px rgba(26,19,10,0.85)" }}
+        >
           Scroll
         </p>
         <svg viewBox="0 0 24 32" className="h-7 w-5" aria-hidden="true">
           <path
             d="M12 4 V24 M5 17 L12 25 L19 17"
             fill="none"
-            stroke="var(--color-champagne)"
+            stroke="#fdf6e8"
             strokeWidth="1.2"
             strokeLinecap="round"
             strokeLinejoin="round"

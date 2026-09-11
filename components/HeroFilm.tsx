@@ -102,13 +102,16 @@ export function HeroFilm({ reducedMotion }: { reducedMotion: boolean }) {
         className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(to bottom, rgba(24,18,10,0.34) 0%, transparent 26%, transparent 62%, rgba(24,18,10,0.42) 100%)",
+            // Deepened top and bottom. The eyebrow and the scroll cue are
+            // 12.5px type sitting in these two bands over an open sky, and
+            // they measured 2.5-4.3:1 there — under the 4.5:1 that size needs.
+            "linear-gradient(to bottom, rgba(24,18,10,0.62) 0%, rgba(24,18,10,0.18) 30%, transparent 46%, rgba(24,18,10,0.22) 66%, rgba(24,18,10,0.66) 100%)",
         }}
       />
       {/* The last inch hands over to the page colour, so the section below
           begins rather than starts. */}
       <div
-        className="absolute inset-x-0 bottom-0 h-[14%]"
+        className="absolute inset-x-0 bottom-0 h-[10%]"
         style={{
           background:
             "linear-gradient(to bottom, transparent, color-mix(in oklab, var(--color-ivory) 80%, transparent) 70%, var(--color-ivory) 100%)",
