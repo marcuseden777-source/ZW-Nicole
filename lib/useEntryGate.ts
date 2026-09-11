@@ -26,13 +26,23 @@ export function useEntryGate({
   openDuration,
   clearDuration,
   rememberForSession,
-  enabled,
+  ready,
+  reducedMotion,
 }: {
   openDuration: number;
   clearDuration: number;
   rememberForSession: boolean;
-  /** False when the door should never appear at all. */
-  enabled: boolean;
+  /**
+   * Whether the capability probe has finished.
+   *
+   * Kept separate from `reducedMotion` on purpose. Collapsing the two into
+   * one `enabled` boolean means the first render — when nothing has been
+   * measured yet — reads as "disabled", and the gate latches itself done
+   * before it has ever been seen. The door has to wait to be told, not
+   * assume silence means no.
+   */
+  ready: boolean;
+  reducedMotion: boolean;
 }) {
   // Always starts sealed, on both server and client, so hydration matches.
   // A guest who has already entered is skipped forward in an effect instead.
@@ -42,39 +52,41 @@ export function useEntryGate({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    // Nothing is decided until the device has actually been measured.
+    if (!ready) return;
 
-    // A guest who arrived at a specific section — a shared deep link, a back
-    // navigation, a reload partway down — asked for that place, not for a
-    // ceremony. Let them straight through.
-    const deepLinked =
-      window.location.hash.length > 1 ||
-      window.scrollY > 0 ||
-      (performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined)
-        ?.type === "back_forward";
-
-    if (!enabled || deepLinked) {
+    const skip = () => {
       live.current = 1;
       setProgress(1);
       setStage("done");
       setEntered(true);
-      return;
+    };
+
+    // A guest who asked their system for reduced motion never meets the door.
+    if (reducedMotion) return skip();
+
+    // A guest who arrived at a specific section — a shared deep link, a back
+    // navigation, a reload partway down — asked for that place, not for a
+    // ceremony. Let them straight through.
+    const navigation = performance.getEntriesByType("navigation")[0] as
+      | PerformanceNavigationTiming
+      | undefined;
+    if (window.location.hash.length > 1 || window.scrollY > 0 || navigation?.type === "back_forward") {
+      return skip();
     }
 
     if (rememberForSession) {
       try {
-        if (sessionStorage.getItem(SESSION_KEY) === "1") {
-          live.current = 1;
-          setProgress(1);
-          setStage("done");
-          setEntered(true);
-        }
+        if (sessionStorage.getItem(SESSION_KEY) === "1") return skip();
       } catch {
-        // Private browsing and blocked storage both throw. Showing the gate
+        // Private browsing and blocked storage both throw. Showing the door
         // again is the harmless outcome, so there is nothing to handle.
       }
     }
-  }, [rememberForSession, enabled]);
+
+    // Only now is it certain the door should be shown.
+    setMounted(true);
+  }, [ready, reducedMotion, rememberForSession]);
 
   const open = useCallback(() => {
     setStage((current) => (current === "sealed" ? "opening" : current));

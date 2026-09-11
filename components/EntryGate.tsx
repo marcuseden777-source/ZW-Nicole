@@ -37,7 +37,8 @@ export function EntryGate() {
     openDuration: content.door.openDuration,
     clearDuration: content.door.clearDuration,
     rememberForSession: content.door.rememberForSession,
-    enabled: capability.ready && !capability.reducedMotion,
+    ready: capability.ready,
+    reducedMotion: capability.reducedMotion,
   });
 
   const button = useRef<HTMLButtonElement>(null);
