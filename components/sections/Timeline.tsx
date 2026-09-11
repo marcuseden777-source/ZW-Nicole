@@ -78,7 +78,9 @@ export function Timeline() {
               >
                 <p
                   className="u-display pr-4 pt-1 text-right text-[clamp(0.85rem,2.6vw,1rem)] uppercase tracking-[0.14em] transition-colors duration-700"
-                  style={{ color: passed ? "var(--color-gold-deep)" : "var(--color-ink-faint)" }}
+                  // Both states must be readable: the rose marks where you are,
+                  // it does not decide which times you are allowed to read.
+                  style={{ color: passed ? "var(--color-gold-deep)" : "var(--color-ink-soft)" }}
                 >
                   {item.time}
                 </p>

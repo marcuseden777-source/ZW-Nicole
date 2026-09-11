@@ -1,9 +1,11 @@
+import { EntryGate } from "@/components/EntryGate";
+import { SkipLink } from "@/components/SkipLink";
+import { GateBoundary } from "@/components/GateBoundary";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { Closing } from "@/components/sections/Closing";
 import { Countdown } from "@/components/sections/Countdown";
 import { Faq } from "@/components/sections/Faq";
 import { Hero } from "@/components/sections/Hero";
-import { Invitation } from "@/components/sections/Invitation";
 import { Gallery, Guestbook } from "@/components/sections/Keepsake";
 import { Rsvp } from "@/components/sections/Rsvp";
 import { Story } from "@/components/sections/Story";
@@ -28,24 +30,26 @@ export default function Page() {
 
   return (
     <>
+      {/* The door. Client-only and above everything, over a page that is
+          already complete in the HTML — so a crawler, a link-preview bot and
+          a guest without JavaScript get the invitation and never meet a gate. */}
+      <GateBoundary>
+        <EntryGate />
+      </GateBoundary>
+
       <SmoothScroll />
 
       {/* Guests arriving with a keyboard or a screen reader should not have to
           scroll through an envelope to reach the details. */}
-      <a
-        href="#invitation-heading"
-        className="u-eyebrow sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:border focus:border-gold focus:bg-ivory focus:px-6 focus:py-3"
-      >
-        Skip to the invitation
-      </a>
+      <SkipLink targetId="welcome-heading" />
 
-      <main>
+      <div id="site-root">
+        <main>
         <Hero />
         <Welcome />
 
         {phase === "invitation" && <Countdown />}
 
-        <Invitation />
         <Story />
 
         {phase === "invitation" ? (
@@ -63,9 +67,10 @@ export default function Page() {
             <Venue />
           </>
         )}
-      </main>
+        </main>
 
-      <Closing phase={phase} />
+        <Closing phase={phase} />
+      </div>
 
       <StructuredData />
     </>

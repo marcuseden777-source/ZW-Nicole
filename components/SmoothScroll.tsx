@@ -1,21 +1,31 @@
 "use client";
 
 import Lenis from "lenis";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
+import { subscribeToEntry, hasEntered } from "@/lib/entryState";
 import { useReveal } from "@/lib/useReveal";
 
 /**
  * The weighted, unhurried scroll the whole piece is choreographed around —
  * and the observer that brings each section up as it is reached.
  *
- * Anyone who has asked their system for reduced motion keeps the browser's
- * own plain scrolling, untouched.
+ * Lenis only starts once the guest is through the door. Starting it earlier
+ * would let the page scroll underneath the gate: Lenis moves the page itself,
+ * so `overflow: hidden` on the body does not stop it.
+ *
+ * Anyone who has asked their system for reduced motion keeps the browser's own
+ * plain scrolling, untouched.
  */
 export function SmoothScroll() {
   useReveal();
 
+  const [entered, setEntered] = useState(hasEntered);
+
+  useEffect(() => subscribeToEntry(setEntered), []);
+
   useEffect(() => {
+    if (!entered) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const lenis = new Lenis({
@@ -36,7 +46,7 @@ export function SmoothScroll() {
       cancelAnimationFrame(frame);
       lenis.destroy();
     };
-  }, []);
+  }, [entered]);
 
   return null;
 }

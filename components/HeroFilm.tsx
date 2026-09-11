@@ -49,17 +49,27 @@ export function HeroFilm({ reducedMotion }: { reducedMotion: boolean }) {
         <source src={cut.mp4} type="video/mp4" />
       </video>
 
-      {/* Dimmed, so cream paper reads against a dusk sky, and faded into the
-          page colour at the foot so the section below does not begin abruptly. */}
+      {/* Dimmed so the names read against a dusk sky, weighted top and bottom
+          where the type actually sits rather than flatly across the frame —
+          a uniform scrim costs the sky its colour for no benefit. */}
       <div
         className="absolute inset-0"
         style={{ backgroundColor: `rgba(28, 22, 14, ${content.heroFilm.scrim})` }}
       />
       <div
-        className="absolute inset-x-0 bottom-0 h-2/5"
+        className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(to bottom, transparent, color-mix(in oklab, var(--color-ivory) 88%, transparent) 72%, var(--color-ivory) 100%)",
+            "linear-gradient(to bottom, rgba(24,18,10,0.34) 0%, transparent 26%, transparent 62%, rgba(24,18,10,0.42) 100%)",
+        }}
+      />
+      {/* The last inch hands over to the page colour, so the section below
+          begins rather than starts. */}
+      <div
+        className="absolute inset-x-0 bottom-0 h-[14%]"
+        style={{
+          background:
+            "linear-gradient(to bottom, transparent, color-mix(in oklab, var(--color-ivory) 80%, transparent) 70%, var(--color-ivory) 100%)",
         }}
       />
     </div>

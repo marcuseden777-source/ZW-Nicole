@@ -263,7 +263,25 @@ export const envelope = {
 };
 
 /* ───────────────────────────────────────────────────────────────────────────
- * 16.  T H E   L A N D I N G   F I L M
+ * 16.  T H E   D O O R
+ *
+ *  The sealed envelope guests meet first. It is the way in: tap it, the wax
+ *  breaks, and it clears away to the film beneath.
+ *
+ *  `rememberForSession` skips the door if the guest has already come through
+ *  it in this browser session, so a refresh halfway down the page does not
+ *  put them back outside. Close the tab and it greets them again.
+ * ─────────────────────────────────────────────────────────────────────────── */
+export const door = {
+  prompt: "Tap to open",
+  // Milliseconds. The opening is deliberately unhurried — it is the gift.
+  openDuration: 2800,
+  clearDuration: 1100,
+  rememberForSession: true,
+};
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * 17.  T H E   L A N D I N G   F I L M
  *
  *  The film behind the sealed envelope. Two cuts: one framed for laptops,
  *  one for phones — the browser downloads only the one it needs.
@@ -293,11 +311,49 @@ export const heroFilm = {
     poster: "/hero/landing-mobile.jpg",
   },
   // How far the film is dimmed so the cream envelope reads against it, 0–1.
-  scrim: 0.42,
+  scrim: 0.26,
 };
 
 /* ───────────────────────────────────────────────────────────────────────────
- * 17.  M O T I O N
+ * 18.  A M B I E N T   F I L M S
+ *
+ *  Optional films that sit quietly behind sections, and the floral bloom that
+ *  can cover the moment the door opens.
+ *
+ *  Every one is OFF until its file exists. A slot that is off costs the guest
+ *  nothing — no request, no broken frame, the section simply looks as it does
+ *  now. Drop the files into /public/ambient and flip `enabled` to true.
+ *
+ *  See ASSETS.md for exactly which file belongs in which slot.
+ * ─────────────────────────────────────────────────────────────────────────── */
+export const ambient = {
+  // Plays over the door as it opens, so the letter blooms into the film
+  // rather than simply dissolving.
+  bloom: {
+    enabled: false,
+    desktop: { webm: "/ambient/bloom-desktop.webm", mp4: "/ambient/bloom-desktop.mp4" },
+    mobile: { webm: "/ambient/bloom-mobile.webm", mp4: "/ambient/bloom-mobile.mp4" },
+  },
+
+  // Behind their story.
+  story: {
+    enabled: false,
+    opacity: 0.2,
+    desktop: { webm: "/ambient/silk-desktop.webm", mp4: "/ambient/silk-desktop.mp4" },
+    mobile: { webm: "/ambient/silk-mobile.webm", mp4: "/ambient/silk-mobile.mp4" },
+  },
+
+  // Behind the closing words.
+  closing: {
+    enabled: false,
+    opacity: 0.18,
+    desktop: { webm: "/ambient/letter-desktop.webm", mp4: "/ambient/letter-desktop.mp4" },
+    mobile: { webm: "/ambient/letter-mobile.webm", mp4: "/ambient/letter-mobile.mp4" },
+  },
+};
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * 19.  M O T I O N
  *
  *  Set `webgl` to false for the quieter version — the site keeps its whole
  *  design and simply stops rendering the three-dimensional layer.

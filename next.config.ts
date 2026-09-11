@@ -18,6 +18,21 @@ const nextConfig: NextConfig = {
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
         ],
       },
+      {
+        // The landing film and its poster frames never change without
+        // changing name, so let a guest who reopens the invitation — and
+        // every CDN edge between — keep them for a year.
+        source: "/hero/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        source: "/gallery/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
     ];
   },
 };

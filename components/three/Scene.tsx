@@ -125,7 +125,7 @@ export function Scene({ progress, monogram, petalCount, lowPower }: Props) {
         )}
 
         <Envelope openness={progress} monogram={monogram} />
-        {petalCount > 0 && <Petals count={petalCount} />}
+        {petalCount > 0 && <Petals count={petalCount} openness={progress} />}
       </Suspense>
     </Canvas>
   );
