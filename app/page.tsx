@@ -17,7 +17,7 @@ import { Venue } from "@/components/sections/Venue";
 import { Welcome } from "@/components/sections/Welcome";
 import * as content from "@/content/wedding";
 import type { Phase } from "@/content/wedding";
-import { readAmbient, readGallery } from "@/lib/media";
+import { readAmbient, readDayGallery, readGallery } from "@/lib/media";
 
 /**
  * Which life the site is living. The hosting dashboard can override the
@@ -36,7 +36,12 @@ export default async function Page() {
   // than listed by hand. Drop files into the folders and they appear; leave
   // the folders empty and every section that uses them shows its considered
   // empty state instead. Nobody has to edit TypeScript to add a picture.
-  const photos = await readGallery();
+  //
+  // Two folders, because they are two sets: /public/gallery holds the
+  // pictures the couple already have of each other, which the Moments reel
+  // shows in both phases, and /public/gallery/the-day holds the photographs
+  // of the wedding itself, which the keepsake wall shows afterwards.
+  const [photos, dayPhotos] = await Promise.all([readGallery(), readDayGallery()]);
   const films = readAmbient();
 
   return (
@@ -105,7 +110,7 @@ export default async function Page() {
           </>
         ) : (
           <>
-            <Gallery photos={photos} />
+            <Gallery photos={dayPhotos} />
             <Guestbook />
             <Timeline />
             <Venue />

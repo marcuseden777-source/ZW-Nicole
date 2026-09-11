@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Lightbox } from "@/components/ui/Lightbox";
 import { Divider } from "@/components/ui/Ornaments";
 import type { Photo } from "@/lib/media";
+import * as content from "@/content/wedding";
 
 /**
  * The reel of photographs.
@@ -200,12 +201,43 @@ export function Carousel({ photos }: { photos: Photo[] }) {
     };
 
     frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(frame);
+
+      // Everything this loop wrote has to be taken back off, because the
+      // reason it stopped may be that the guest just asked their system for
+      // reduced motion — in which case the plain strip is about to render
+      // through these same elements. Left behind, `visibility: hidden` and
+      // `aria-hidden` would keep most of their photographs permanently
+      // invisible in a carousel that no longer has any way to reveal them.
+      const trackEl = track.current;
+      if (trackEl) {
+        trackEl.style.transform = "";
+        trackEl.style.gap = "";
+      }
+      for (const el of cards.current) {
+        if (!el) continue;
+        el.style.transform = "";
+        el.style.opacity = "";
+        el.style.zIndex = "";
+        el.style.visibility = "";
+        el.removeAttribute("aria-hidden");
+      }
+    };
   }, [enhanced, count, centreAt]);
 
   /* Steering by hand. A drag scrubs the reel; letting go settles it on the
      nearest photograph and hands control back to the scroll. */
   const drag = useRef<{ x: number; from: number } | null>(null);
+  /** The timer that hands steering back to the scroll, so it can be cancelled. */
+  const settle = useRef<number | null>(null);
+
+  useEffect(
+    () => () => {
+      if (settle.current !== null) window.clearTimeout(settle.current);
+    },
+    [],
+  );
 
   const onPointerDown = (event: React.PointerEvent) => {
     if (!enhanced || count < 2) return;
@@ -229,7 +261,8 @@ export function Carousel({ photos }: { photos: Photo[] }) {
     drag.current = null;
     held.current = held.current === null ? null : Math.round(held.current);
     // Hold the settled position briefly, then let the scroll take over again.
-    window.setTimeout(() => {
+    if (settle.current !== null) window.clearTimeout(settle.current);
+    settle.current = window.setTimeout(() => {
       held.current = null;
     }, 1400);
   };
@@ -240,7 +273,8 @@ export function Carousel({ photos }: { photos: Photo[] }) {
       held.current = next;
       position.current = next;
       setCentred(next);
-      window.setTimeout(() => {
+      if (settle.current !== null) window.clearTimeout(settle.current);
+      settle.current = window.setTimeout(() => {
         held.current = null;
       }, 2200);
     },
@@ -267,7 +301,7 @@ export function Carousel({ photos }: { photos: Photo[] }) {
             style={{ borderColor: "var(--rule)" }}
           >
             <p className="u-display text-balance italic leading-relaxed text-ink-soft">
-              The photographs are being gathered. They will live here soon.
+              {content.galleryEmpty.invitation}
             </p>
           </div>
         </div>

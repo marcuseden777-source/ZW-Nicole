@@ -117,6 +117,79 @@ function sizeFromHeader(buf: Buffer): { width: number; height: number } | null {
 }
 
 /**
+ * Which way up a JPEG actually is.
+ *
+ * A phone held upright does not usually rotate the pixels. It writes them
+ * landscape and adds an EXIF tag saying "turn this 90 degrees to show it".
+ * Browsers obey that tag, and so does the image optimiser this site serves
+ * through — so the picture on screen is portrait while the numbers in the
+ * file say landscape. Believe the file and every upright photograph from the
+ * wedding gets a landscape frame with a portrait picture crushed into it.
+ *
+ * Returns 1-8 as EXIF defines them, or null if there is no tag to read.
+ * Values 5 to 8 are the ones that involve a quarter turn, and those are the
+ * ones where width and height have to be swapped.
+ */
+function orientationFromJpeg(buf: Buffer): number | null {
+  if (buf.length < 4 || buf[0] !== 0xff || buf[1] !== 0xd8) return null;
+
+  let i = 2;
+  while (i < buf.length - 4) {
+    if (buf[i] !== 0xff) {
+      i++;
+      continue;
+    }
+    const marker = buf[i + 1];
+    // Start of scan: past here is compressed pixels, not metadata.
+    if (marker === 0xda) return null;
+    if (marker === 0xd8 || (marker >= 0xd0 && marker <= 0xd9)) {
+      i += 2;
+      continue;
+    }
+
+    const length = buf.readUInt16BE(i + 2);
+
+    // APP1 is where EXIF lives.
+    if (marker === 0xe1 && i + 10 < buf.length && buf.toString("ascii", i + 4, i + 10) === "Exif\0\0") {
+      const tiff = i + 10;
+      if (tiff + 8 > buf.length) return null;
+
+      // The TIFF block carries its own byte order, which is not the JPEG's.
+      const order = buf.toString("ascii", tiff, tiff + 2);
+      const little = order === "II";
+      if (!little && order !== "MM") return null;
+
+      const u16 = (at: number) => (little ? buf.readUInt16LE(at) : buf.readUInt16BE(at));
+      const u32 = (at: number) => (little ? buf.readUInt32LE(at) : buf.readUInt32BE(at));
+
+      const ifd = tiff + u32(tiff + 4);
+      if (ifd + 2 > buf.length) return null;
+
+      const entries = u16(ifd);
+      for (let e = 0; e < entries; e++) {
+        const entry = ifd + 2 + e * 12;
+        if (entry + 12 > buf.length) return null;
+        // 0x0112 is Orientation. Its value is a SHORT sitting in the first
+        // two bytes of the entry's value field.
+        if (u16(entry) === 0x0112) {
+          const value = u16(entry + 8);
+          return value >= 1 && value <= 8 ? value : null;
+        }
+      }
+      return null;
+    }
+
+    i += 2 + length;
+  }
+  return null;
+}
+
+/** A quarter turn means the picture is the other way round from its numbers. */
+function turnsSideways(orientation: number | null): boolean {
+  return orientation !== null && orientation >= 5 && orientation <= 8;
+}
+
+/**
  * sharp if it is there, nothing if it is not. Never throws.
  *
  * Next.js brings sharp along for its own image optimisation, so in practice
@@ -134,13 +207,15 @@ async function loadSharp(): Promise<SharpModule | null> {
 }
 
 /** Only the sliver of sharp's surface this file touches. */
-type SharpModule = (input: string) => {
-  resize(w: number, h: number, opts?: { fit?: string }): {
-    webp(opts?: { quality?: number }): { toBuffer(): Promise<Buffer> };
-  };
+type SharpPipeline = {
+  rotate(): SharpPipeline;
+  resize(w: number, h: number, opts?: { fit?: string }): SharpPipeline;
+  webp(opts?: { quality?: number }): { toBuffer(): Promise<Buffer> };
+  metadata(): Promise<{ width?: number; height?: number; orientation?: number }>;
 };
+type SharpModule = (input: string) => SharpPipeline;
 
-const IMAGE = /\.(jpe?g|png|webp|avif|gif)$/i;
+const IMAGE = /\.(jpe?g|png|webp|avif|gif|heic|heif)$/i;
 
 /**
  * Turn a filename into a caption.
@@ -164,7 +239,7 @@ function captionFromName(file: string): string {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-let cachedGallery: Photo[] | null = null;
+const caches = new Map<string, Photo[]>();
 
 /**
  * Every photograph in /public/gallery, in filename order.
@@ -173,15 +248,16 @@ let cachedGallery: Photo[] | null = null;
  * situation today, and which both the carousel and the gallery wall are built
  * to show as something considered rather than something broken.
  */
-export async function readGallery(): Promise<Photo[]> {
-  if (cachedGallery) return cachedGallery;
+export async function readGallery(folder = "gallery"): Promise<Photo[]> {
+  const cached = caches.get(folder);
+  if (cached) return cached;
 
   let files: string[];
   try {
-    files = readdirSync(join(PUBLIC, "gallery"));
+    files = readdirSync(join(PUBLIC, folder));
   } catch {
-    cachedGallery = [];
-    return cachedGallery;
+    caches.set(folder, []);
+    return [];
   }
 
   const sharp = await loadSharp();
@@ -191,11 +267,11 @@ export async function readGallery(): Promise<Photo[]> {
     // Numeric-aware, so 10 comes after 9 rather than after 1.
     .sort((a, b) => a.localeCompare(b, "en", { numeric: true, sensitivity: "base" }))
     .map((file): Photo | null => {
-      const path = join(PUBLIC, "gallery", file);
+      const path = join(PUBLIC, folder, file);
 
       let width = 0;
       let height = 0;
-      let blurDataURL: string | undefined;
+      const blurDataURL: string | undefined = undefined;
 
       try {
         if (statSync(path).size === 0) return null;
@@ -206,16 +282,19 @@ export async function readGallery(): Promise<Photo[]> {
           width = parsed.width;
           height = parsed.height;
         }
+
+        // Turn the numbers the same way the browser will turn the picture.
+        if (turnsSideways(orientationFromJpeg(head))) {
+          [width, height] = [height, width];
+        }
       } catch {
         return null;
       }
 
-      // A file we cannot measure is a file we cannot lay out without the page
-      // jumping when it loads. Leaving it out is kinder than shipping a jump.
-      if (!width || !height) return null;
-
+      // Unmeasured, for now. AVIF and HEIC have no parser here and sharp has
+      // not run yet; both get their chance below before anything is dropped.
       return {
-        src: `/gallery/${encodeURIComponent(file)}`,
+        src: `/${folder}/${encodeURIComponent(file)}`,
         alt: captionFromName(file),
         width,
         height,
@@ -226,16 +305,44 @@ export async function readGallery(): Promise<Photo[]> {
     })
     .filter((p): p is Photo => p !== null);
 
-  // The placeholder: a twelve-pixel-wide copy of the photograph, inlined into
-  // the HTML and stretched over the space the real one will occupy. It costs
-  // a few hundred bytes and it is the difference between a photograph fading
-  // up out of its own colours and a grey rectangle waiting to be filled.
+  // With sharp present, ask it rather than trusting our own header reading —
+  // it knows every format's orientation, not only JPEG's, and it is the same
+  // library the image optimiser serves through, so its answer is by
+  // definition the shape that reaches the screen.
+  //
+  // The same pass makes the placeholder: a twelve-pixel-wide copy of the
+  // photograph, inlined into the HTML and stretched over the space the real
+  // one will occupy. It costs a few hundred bytes and it is the difference
+  // between a photograph fading up out of its own colours and a grey
+  // rectangle waiting to be filled.
   if (sharp) {
     await Promise.all(
       photos.map(async (photo) => {
+        const file = decodeURIComponent(photo.src.replace(`/${folder}/`, ""));
+        const full = join(PUBLIC, folder, file);
+
         try {
-          const file = decodeURIComponent(photo.src.replace("/gallery/", ""));
-          const buf = await sharp(join(PUBLIC, "gallery", file))
+          const meta = await sharp(full).metadata();
+          if (meta.width && meta.height) {
+            const sideways = turnsSideways(meta.orientation ?? null);
+            photo.width = sideways ? meta.height : meta.width;
+            photo.height = sideways ? meta.width : meta.height;
+            photo.orientation =
+              photo.width > photo.height * 1.06
+                ? "landscape"
+                : photo.height > photo.width * 1.06
+                  ? "portrait"
+                  : "square";
+          }
+        } catch {
+          /* Keep what the header parse worked out. */
+        }
+
+        try {
+          // .rotate() with no argument applies the file's own EXIF turn, so
+          // the placeholder is the same way up as the photograph it stands in for.
+          const buf = await sharp(full)
+            .rotate()
             .resize(12, 12, { fit: "inside" })
             .webp({ quality: 40 })
             .toBuffer();
@@ -248,8 +355,38 @@ export async function readGallery(): Promise<Photo[]> {
     );
   }
 
-  cachedGallery = photos;
-  return photos;
+  // Only now is it fair to drop anything: a picture with no dimensions cannot
+  // be laid out without the page jumping when it arrives, and a jump is worse
+  // than an absence. But a photograph disappearing from a wedding gallery with
+  // no explanation is worse than either, so say so where whoever added it will
+  // see it — in the build log.
+  const measured = photos.filter((p) => p.width > 0 && p.height > 0);
+  const dropped = photos.filter((p) => p.width === 0 || p.height === 0);
+
+  if (dropped.length > 0) {
+    const names = dropped.map((p) => decodeURIComponent(p.src.replace(`/${folder}/`, "")));
+    console.warn(
+      `\n[gallery] ${dropped.length} file(s) in /public/${folder} could not be measured and ` +
+        `have been left out:\n  ${names.join("\n  ")}\n` +
+        `  They may be corrupt, or in a format this build cannot read (HEIC needs sharp ` +
+        `built with libheif). Converting them to JPEG will fix it.\n`,
+    );
+  }
+
+  caches.set(folder, measured);
+  return measured;
+}
+
+/**
+ * The photographs of the wedding day itself, for the keepsake gallery wall.
+ *
+ * A separate folder because they are a separate set. Before the day, the reel
+ * holds the pictures the couple already have of each other; afterwards the
+ * wall holds the pictures of the wedding. Feeding both from one folder made
+ * the same photograph appear twice on the same page.
+ */
+export function readDayGallery(): Promise<Photo[]> {
+  return readGallery("gallery/the-day");
 }
 
 /* ───────────────────────────────────────────────────────────────────────────

@@ -211,23 +211,21 @@ export const contacts = {
 /* ───────────────────────────────────────────────────────────────────────────
  * 11.  T H E   G A L L E R Y      (shown once phase is "keepsake")
  *
- *  Drop photographs into /public/gallery, then list them here. `alt` is read
- *  aloud by screen readers and shown if an image fails — write it as you
- *  would describe the photo to someone on the phone.
+ *  There is no list of photographs here, and there is not meant to be.
+ *  Drop image files into /public/gallery and the site finds them when it
+ *  builds: it reads each picture's real proportions out of the file, takes the
+ *  caption from the filename, and makes a blurred placeholder. Nobody has to
+ *  measure a photograph to add one. See ASSETS.md.
  *
- *  Leave the list empty and the gallery shows a graceful card instead of
- *  breaking, so the switch to "keepsake" is safe at any time.
+ *  What lives here is only what the page should say while the folder is still
+ *  empty — which is a different sentence before the wedding and after it.
  * ─────────────────────────────────────────────────────────────────────────── */
-export const gallery: { src: string; alt: string; span?: "wide" | "tall" }[] = [
-  // Drop photographs into /public/gallery and list them here. They appear in
-  // the Moments carousel, which turns as the page is read and opens each one
-  // full-size on a tap.
-  //
-  // `alt` is read aloud by screen readers and shown if an image fails to
-  // load — write it as you would describe the photo to someone on the phone.
-  //
-  // { src: "/gallery/01.jpg", alt: "Zhi Wei and Nicole at sunrise on the water" },
-];
+export const galleryEmpty = {
+  /* Shown where the photographs will go, before the wedding. */
+  invitation: "The photographs are being gathered. They will live here soon.",
+  /* And afterwards, while they are still being chosen. */
+  keepsake: "The photographs from the day are being chosen. They will be here shortly.",
+};
 
 /* A film from the day — a YouTube or Vimeo embed link. "" leaves it out. */
 export const filmUrl = "";

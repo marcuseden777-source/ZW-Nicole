@@ -244,8 +244,10 @@ export function Lightbox({ photos, index, onClose, onIndex }: Props) {
       {/* The neighbours, fetched quietly so the next tap is instant. Hidden
           from everything — this is a cache warmer, not content. */}
       <div className="pointer-events-none absolute h-px w-px overflow-hidden opacity-0" aria-hidden="true">
-        {[-1, 1].map((d) => {
-          const neighbour = photos[(index + d + count) % count];
+        {/* With exactly two photographs both neighbours are the same picture,
+            so they are deduplicated rather than rendered twice under one key. */}
+        {[...new Set([-1, 1].map((d) => photos[(index + d + count) % count]?.src))].map((src) => {
+          const neighbour = photos.find((p) => p.src === src);
           if (!neighbour || neighbour.src === photo.src) return null;
           return (
             <Image

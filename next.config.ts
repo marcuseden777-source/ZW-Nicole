@@ -33,6 +33,14 @@ const nextConfig: NextConfig = {
           { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
         ],
       },
+      {
+        // The ambient films are named for their slot and replaced by changing
+        // the name, so they can be kept as long as the hero and the gallery.
+        source: "/ambient/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
     ];
   },
 };

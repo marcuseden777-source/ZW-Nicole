@@ -42,47 +42,66 @@ export function Gallery({ photos }: { photos: Photo[] }) {
             style={{ borderColor: "var(--rule)" }}
           >
             <p className="u-display text-balance italic leading-relaxed text-ink-soft">
-              The photographs are being gathered. They will live here soon.
+              {content.galleryEmpty.keepsake}
             </p>
           </div>
         ) : (
-          <ul className="mt-[clamp(2.5rem,7vh,4rem)] columns-2 gap-3 sm:columns-3 sm:gap-4">
+          /*
+           * A justified wall: rows of full-height pictures, each as wide as
+           * its own proportions require, the row stretched to meet both
+           * margins. This replaced CSS columns, which looked right and read
+           * wrong — in columns the second photograph is below the first, not
+           * beside it, so a set in the order of the day ran top-to-bottom
+           * down the left before jumping back up to the middle. A wedding
+           * album has an order. This keeps it.
+           */
+          <ul className="mt-[clamp(2.5rem,7vh,4rem)] flex flex-wrap gap-2 sm:gap-3">
             {photos.map((photo, i) => {
+              const ratio = photo.width / photo.height;
               const described = photo.alt || `Photograph ${i + 1} of ${photos.length}`;
               return (
                 <li
                   key={photo.src}
-                  className="u-reveal mb-3 break-inside-avoid sm:mb-4"
-                  style={{ "--reveal-delay": `${(i % 6) * 90}ms` } as React.CSSProperties}
+                  className="u-reveal"
+                  style={{
+                    // Grow in proportion to width, so every row justifies and
+                    // no picture is cropped to make it fit.
+                    flexGrow: ratio,
+                    flexBasis: `${ratio * 15}rem`,
+                    // Bounds how far a short last row may stretch, which is
+                    // the one ugly failure mode of a justified layout.
+                    maxWidth: `min(100%, ${ratio * 26}rem)`,
+                    "--reveal-delay": `${(i % 6) * 90}ms`,
+                  } as React.CSSProperties}
                 >
-                  <button
-                    type="button"
-                    onClick={() => setOpen(i)}
-                    className="group relative block w-full overflow-hidden rounded-sm border bg-parchment"
-                    style={{ borderColor: "var(--rule)" }}
-                  >
-                    <Image
-                      src={photo.src}
-                      alt={described}
-                      width={photo.width}
-                      height={photo.height}
-                      // Two across on a phone, three on a laptop — so no phone
-                      // ever downloads a photograph wider than its own screen.
-                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 380px"
-                      placeholder={photo.blurDataURL ? "blur" : "empty"}
-                      blurDataURL={photo.blurDataURL}
-                      className="h-auto w-full transition-transform duration-[1.2s] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.04]"
-                    />
+                  <figure>
+                    <button
+                      type="button"
+                      onClick={() => setOpen(i)}
+                      className="group relative block w-full overflow-hidden rounded-sm border bg-parchment"
+                      style={{ borderColor: "var(--rule)", aspectRatio: String(ratio) }}
+                    >
+                      <Image
+                        src={photo.src}
+                        alt={described}
+                        fill
+                        sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 34vw"
+                        placeholder={photo.blurDataURL ? "blur" : "empty"}
+                        blurDataURL={photo.blurDataURL}
+                        className="object-cover transition-transform duration-[1.2s] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.04]"
+                      />
+                      <span className="sr-only">Open {described} full size</span>
+                    </button>
                     {photo.alt && (
-                      <span
-                        className="u-eyebrow pointer-events-none absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-[rgba(26,20,13,0.82)] to-transparent px-4 pb-3 pt-8 text-left text-champagne opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100"
-                        aria-hidden="true"
-                      >
+                      /* A plate under the picture rather than a band that
+                         appears on hover. The hover band was aria-hidden and
+                         needed a mouse, so on a phone and to a screen reader
+                         the captions did not exist at all. */
+                      <figcaption className="u-eyebrow mt-2 text-ink-soft">
                         {photo.alt}
-                      </span>
+                      </figcaption>
                     )}
-                    <span className="sr-only">Open {described} full size</span>
-                  </button>
+                  </figure>
                 </li>
               );
             })}
