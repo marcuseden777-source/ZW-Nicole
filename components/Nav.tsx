@@ -116,6 +116,11 @@ export function Nav({ destinations }: { destinations: Destination[] }) {
           transition: "opacity 500ms var(--ease-silk)",
         }}
         aria-hidden={!open}
+        // aria-hidden alone leaves every button inside still tabbable, so a
+        // keyboard guest walks into an invisible menu and is lost. `inert`
+        // takes the whole subtree out of the tab order and the accessibility
+        // tree at once, which is the thing that was actually meant.
+        inert={!open}
         data-no-print
       >
         <button

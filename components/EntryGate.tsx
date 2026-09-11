@@ -63,6 +63,18 @@ export function EntryGate({ bloom }: { bloom: FilmSources | null }) {
     return () => root.removeAttribute("inert");
   }, [stage, mounted]);
 
+  // When the door finishes and unmounts, the element that had focus goes with
+  // it and focus falls to <body>. A sighted guest never notices; a guest using
+  // a screen reader loses their place in the document entirely and has to
+  // start again from the top. So hand focus deliberately to the start of the
+  // invitation — which is where opening the door was asking to go.
+  useEffect(() => {
+    if (stage !== "done" || !mounted) return;
+    const main = document.querySelector<HTMLElement>("#site-root main");
+    if (!main) return;
+    main.focus({ preventScroll: true });
+  }, [stage, mounted]);
+
   // Escape opens it too — nobody should feel shut out by a decoration.
   useEffect(() => {
     if (stage !== "sealed") return;

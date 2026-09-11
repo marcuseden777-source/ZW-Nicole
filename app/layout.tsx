@@ -28,7 +28,24 @@ const jost = Jost({
   display: "swap",
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+/**
+ * The address this invitation lives at.
+ *
+ * It matters more than it looks: share previews and the `Event` structured
+ * data are both built from it, so if it is wrong the card that lands in the
+ * family WhatsApp group is wrong, and that is the first thing anybody sees.
+ *
+ * Set NEXT_PUBLIC_SITE_URL to the real domain. If nobody remembers to,
+ * Vercel's own build-time variables are used rather than localhost — a
+ * forgotten setting should not be the reason a link preview is broken.
+ */
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "http://localhost:3000");
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

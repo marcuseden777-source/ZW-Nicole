@@ -41,6 +41,12 @@ export default async function Page() {
 
   return (
     <>
+      {/* First in the document, because a skip link that is not the first
+          thing a keyboard reaches is decoration. Guests arriving with a
+          keyboard or a screen reader should not have to pass the menu and an
+          envelope to get to the details. */}
+      <SkipLink targetId="welcome-heading" />
+
       {/* The door. Client-only and above everything, over a page that is
           already complete in the HTML — so a crawler, a link-preview bot and
           a guest without JavaScript get the invitation and never meet a gate. */}
@@ -78,12 +84,10 @@ export default async function Page() {
         }
       />
 
-      {/* Guests arriving with a keyboard or a screen reader should not have to
-          scroll through an envelope to reach the details. */}
-      <SkipLink targetId="welcome-heading" />
-
       <div id="site-root">
-        <main>
+        {/* tabIndex -1 so the door can hand focus here when it closes. It is
+            not a tab stop; it is somewhere focus can legitimately land. */}
+        <main tabIndex={-1} className="focus:outline-none">
         <Hero />
         <Welcome />
 
