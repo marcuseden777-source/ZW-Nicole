@@ -12,11 +12,20 @@ word in one file turns the whole thing into the memory of the day.
 
 ## Editing it
 
-**Everything lives in one file: [`content/wedding.ts`](content/wedding.ts).**
+**The words live in one file: [`content/wedding.ts`](content/wedding.ts).**
 
 Names, the date, the schedule, their story, the venue and how to get there,
-the questions guests ask, the photographs, the colour of the wax. Heavily
-commented, with no code anywhere near it. Change a value, save, done.
+the questions guests ask, the colour of the wax. Heavily commented, with no
+code anywhere near it. Change a value, save, done.
+
+**The pictures and the films are not in a file at all — they are folders.**
+Drop photographs into `public/gallery` and films into `public/ambient`, and
+the site finds them when it builds. It reads each picture's real proportions
+out of the file, takes the caption from the filename, makes a blurred
+placeholder, and works out which films exist and in which cuts. Nobody has to
+measure a photograph or write a line of TypeScript to add one. Empty folders
+are not a gap: every section that uses them has a finished state for having
+none. See [ASSETS.md](ASSETS.md).
 
 ## The two lives
 
@@ -25,7 +34,8 @@ commented, with no code anywhere near it. Change a value, save, done.
 | Door | Sealed envelope | Unchanged |
 | Hero | The film, their names across it | Unchanged |
 | Middle | Invitation, their story | Unchanged |
-| Then | Schedule → countdown → venue → questions → RSVP | Photographs → guest messages → schedule → venue |
+| Moments | The photographs, as a reel | Unchanged |
+| Then | Schedule → countdown → venue → questions → RSVP | The gallery wall → guest messages → schedule → venue |
 | Closing | "We cannot wait to celebrate with you." | "Thank you for standing with us…" |
 
 Switch by editing `phase` in `content/wedding.ts`, or by setting
@@ -75,10 +85,21 @@ reflects is built from geometry inside the scene rather than a downloaded
 HDRI; fonts are self-hosted at build time. No CDN, no font service, no
 tracking. It opens the same on hotel wifi as on fibre.
 
-**Films play everywhere.** Each cut ships as VP9 WebM (offered first, roughly
-half the size) with H.264 behind it for Safari and iOS. The originals were
-H.265 — which plays in Safari and essentially nowhere else — at 15.1 MB and
-11.2 MB; they are now 376 KB and 292 KB, with faststart so they stream.
+**Films play everywhere, and only when they should.** Each cut ships as VP9
+WebM (offered first, roughly half the size) with H.264 behind it for Safari
+and iOS — the browser fetches one, never both. The originals were H.265, which
+plays in Safari and essentially nowhere else, at 15.1 MB and 11.2 MB; they are
+now 376 KB and 292 KB, with faststart so they stream. An ambient film fetches
+nothing until it is nearly on screen, stops when it leaves, and is replaced by
+a still frame for anyone on save-data or asking for reduced motion.
+
+**Photographs keep their own shape.** A wedding set is portrait and landscape
+mixed together, and a grid of identical frames can only hold that by cropping
+most of it. The reel gives every card the same height and its own width; the
+gallery wall runs in columns at natural heights. Nothing is cropped except a
+stitched panorama beyond 1.9:1, and the lightbox still shows that whole.
+Because the dimensions are known before the page renders, there is no reflow
+when a picture arrives.
 
 **It is built to be read by everyone.** Semantic landmarks, one real `<h1>`, a
 skip link past the door, `inert` on the page while the door is up so nobody
@@ -86,8 +107,13 @@ tabs into what they cannot see, labelled controls, `prefers-reduced-motion`
 honoured throughout, and a print stylesheet.
 
 Contrast is measured, not eyeballed: body text 5.71:1, filled controls 4.97:1,
-display type 3.84:1 at sizes where 3:1 is the bar. Verified across six widths
-from 390 px to 1600 px with no horizontal overflow and no text under 12 px.
+display type 3.84:1 at sizes where 3:1 is the bar.
+
+Measured in a real browser rather than asserted: nine widths from 320 px to
+2560 px with no horizontal overflow, nothing escaping its container and no
+text under 12 px; cumulative layout shift of 0; no frame over 32 ms while
+scrolling the whole document; and the tab order walked by hand, which is the
+only way the three keyboard traps that used to be here ever showed up.
 
 **It is built to be shared.** `app/opengraph-image.tsx` generates the card
 people see when the link lands in a WhatsApp thread, from the same content
