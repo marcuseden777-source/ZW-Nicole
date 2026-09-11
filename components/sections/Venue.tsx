@@ -1,7 +1,7 @@
 import { Divider } from "@/components/ui/Ornaments";
 import * as content from "@/content/wedding";
 
-/** Where to come, and a calendar the guest can keep. */
+/** Where to come, how to get there, and a calendar entry to keep. */
 export function Venue() {
   const calendarHref = buildCalendarLink();
 
@@ -11,8 +11,11 @@ export function Venue() {
       className="relative z-[1] px-[var(--gutter)] py-[clamp(3rem,10vh,7rem)]"
     >
       <div className="mx-auto max-w-2xl text-center">
-        <h2 id="venue-heading" className="u-reveal u-script text-[clamp(2.5rem,9vw,4rem)] text-gold-deep">
-          Finding Us
+        <h2
+          id="venue-heading"
+          className="u-reveal u-script text-[clamp(2.5rem,9vw,4rem)] text-gold-deep"
+        >
+          Getting There
         </h2>
         <Divider className="mx-auto mt-5" />
 
@@ -21,10 +24,27 @@ export function Venue() {
           <address className="u-display mt-2 not-italic leading-relaxed text-ink-soft">
             {content.venue.address}
           </address>
-          {content.venue.note && (
-            <p className="u-display mt-4 text-sm italic text-ink-faint">{content.venue.note}</p>
-          )}
         </div>
+
+        {content.venue.directions.length > 0 && (
+          <dl className="mt-[clamp(2.5rem,7vh,3.5rem)] grid gap-6 text-left sm:grid-cols-2">
+            {content.venue.directions.map((way, i) => (
+              <div
+                key={way.mode}
+                className="u-reveal rounded-sm border px-7 py-7"
+                style={{
+                  borderColor: "var(--rule)",
+                  "--reveal-delay": `${i * 120}ms`,
+                } as React.CSSProperties}
+              >
+                <dt className="u-eyebrow">{way.mode}</dt>
+                <dd className="u-display mt-3 text-[0.98rem] leading-relaxed text-ink-soft">
+                  {way.detail}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        )}
 
         <div className="u-reveal mt-9 flex flex-wrap items-center justify-center gap-3">
           {content.venue.mapUrl && (
@@ -41,7 +61,7 @@ export function Venue() {
           {calendarHref && (
             <a
               href={calendarHref}
-              download="wedding.ics"
+              download="zhiwei-and-nicole.ics"
               className="u-eyebrow rounded-full border px-7 py-3.5 text-ink transition-colors duration-300 hover:bg-gold-ink hover:text-white"
               style={{ borderColor: "var(--rule)" }}
             >
@@ -62,9 +82,9 @@ function buildCalendarLink(): string | null {
   const start = new Date(content.weddingDate.iso);
   if (Number.isNaN(start.getTime())) return null;
 
-  const end = new Date(start.getTime() + 6 * 60 * 60 * 1000);
+  const end = new Date(start.getTime() + 5 * 60 * 60 * 1000);
   const stamp = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-  // Long lines and stray commas break calendar clients; both need escaping.
+  // Stray commas and semicolons break calendar clients; both need escaping.
   const escape = (s: string) => s.replace(/([,;\\])/g, "\\$1").replace(/\n/g, "\\n");
 
   const ics = [
@@ -76,8 +96,8 @@ function buildCalendarLink(): string | null {
     `DTSTAMP:${stamp(new Date())}`,
     `DTSTART:${stamp(start)}`,
     `DTEND:${stamp(end)}`,
-    `SUMMARY:${escape(`${content.couple.groom.name} & ${content.couple.bride.name} — ${content.events[0]?.name ?? "Wedding"}`)}`,
-    `LOCATION:${escape(content.venue.address)}`,
+    `SUMMARY:${escape(`${content.couple.partnerOne.name} & ${content.couple.partnerTwo.name}`)}`,
+    `LOCATION:${escape(`${content.venue.name}, ${content.venue.address}`)}`,
     `DESCRIPTION:${escape(content.opening.body)}`,
     "END:VEVENT",
     "END:VCALENDAR",

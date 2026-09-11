@@ -1,9 +1,11 @@
 import { Divider } from "@/components/ui/Ornaments";
 import * as content from "@/content/wedding";
 
-/** The address to the guest, the two lineages, and the verse. */
+/** The address to the guest. */
 export function Invitation() {
-  const people = [content.couple.bride, content.couple.groom];
+  const people = [content.couple.partnerOne, content.couple.partnerTwo].filter(
+    (person) => person.lineage,
+  );
 
   return (
     <section
@@ -11,7 +13,10 @@ export function Invitation() {
       className="relative z-[1] px-[var(--gutter)] py-[clamp(3rem,10vh,7rem)]"
     >
       <div className="mx-auto max-w-2xl text-center">
-        <h2 id="invitation-heading" className="u-reveal u-script text-[clamp(2.25rem,8vw,3.5rem)] text-gold-deep">
+        <h2
+          id="invitation-heading"
+          className="u-reveal u-script text-[clamp(2.25rem,8vw,3.5rem)] text-gold-deep"
+        >
           {content.opening.salutation}
         </h2>
 
@@ -22,23 +27,24 @@ export function Invitation() {
           {content.opening.body}
         </p>
 
-        <Divider className="mx-auto my-[clamp(2.5rem,7vh,4rem)]" />
-
-        {/* The two families, side by side */}
-        <div className="grid gap-10 sm:grid-cols-2 sm:gap-8">
-          {people.map((person, i) => (
-            <div
-              key={person.name}
-              className="u-reveal"
-              style={{ "--reveal-delay": `${i * 140}ms` } as React.CSSProperties}
-            >
-              <p className="u-script u-foil text-[clamp(2.5rem,9vw,3.75rem)]">{person.name}</p>
-              {person.lineage && (
-                <p className="u-eyebrow mt-3 leading-relaxed">{person.lineage}</p>
-              )}
+        {/* Only drawn when at least one of them has a line to introduce. */}
+        {people.length > 0 && (
+          <>
+            <Divider className="mx-auto my-[clamp(2.5rem,7vh,4rem)]" />
+            <div className="grid gap-10 sm:grid-cols-2 sm:gap-8">
+              {people.map((person, i) => (
+                <div
+                  key={person.name}
+                  className="u-reveal"
+                  style={{ "--reveal-delay": `${i * 140}ms` } as React.CSSProperties}
+                >
+                  <p className="u-script u-foil text-[clamp(2.5rem,9vw,3.75rem)]">{person.name}</p>
+                  <p className="u-eyebrow mt-3 leading-relaxed">{person.lineage}</p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </>
+        )}
 
         {content.verse.enabled && (
           <figure
@@ -48,7 +54,9 @@ export function Invitation() {
             <blockquote className="u-display text-balance text-[clamp(1rem,3.2vw,1.25rem)] italic leading-relaxed text-ink-soft">
               &ldquo;{content.verse.text}&rdquo;
             </blockquote>
-            <figcaption className="u-eyebrow mt-5">{content.verse.attribution}</figcaption>
+            {content.verse.attribution && (
+              <figcaption className="u-eyebrow mt-5">{content.verse.attribution}</figcaption>
+            )}
           </figure>
         )}
       </div>

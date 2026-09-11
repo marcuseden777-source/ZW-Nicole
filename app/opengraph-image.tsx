@@ -65,9 +65,9 @@ export default async function Image() {
             gap: 26,
           }}
         >
-          <span>{content.couple.groom.name}</span>
+          <span>{content.couple.partnerOne.name}</span>
           <span style={{ fontSize: 62, color: "#c2a15b" }}>{content.couple.ampersand}</span>
-          <span>{content.couple.bride.name}</span>
+          <span>{content.couple.partnerTwo.name}</span>
         </div>
 
         <div

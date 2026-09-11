@@ -1,14 +1,15 @@
 /* ═══════════════════════════════════════════════════════════════════════════
  *
- *   T H E   I N V I T A T I O N
+ *   Z H I   W E I   &   N I C O L E
+ *   Sunday, 11 October 2026 · Sofitel Singapore City Centre
  *
  *   This is the only file you need to edit.
  *
- *   Everything the site says, shows and celebrates lives here — names, dates,
- *   venues, the timeline, the photographs, the closing dua. Change a value,
- *   save, and the page updates. You never have to touch the design or the code.
+ *   Everything the site says and shows lives here — names, the date, the
+ *   schedule, their story, the photographs, the closing words. Change a
+ *   value, save, and the page updates. The design is never touched.
  *
- *   Lines that begin with // are notes for you. They are invisible on the site.
+ *   Lines beginning with // are notes for you. They never appear on the site.
  *
  * ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -17,13 +18,13 @@ export type Phase = "invitation" | "keepsake";
 /* ───────────────────────────────────────────────────────────────────────────
  *  1.  W H I C H   L I F E   I S   T H E   S I T E   L I V I N G ?
  *
- *  "invitation" — before the wedding. Sealed envelope, event details, RSVP.
- *  "keepsake"   — after the wedding. The RSVP form is replaced by the photo
- *                 gallery and the guest messages. Same link, same design.
+ *  "invitation" — before the wedding. Sealed envelope, schedule, RSVP.
+ *  "keepsake"   — after the wedding. The RSVP is replaced by the photographs
+ *                 and the messages people left. Same link, same design.
  *
  *  Change this one word after the wedding and the site becomes the memory.
- *  (You can also set NEXT_PUBLIC_PHASE in the hosting dashboard to flip it
- *  without editing this file at all.)
+ *  (NEXT_PUBLIC_PHASE in the hosting dashboard overrides it, so the switch
+ *  can be flipped without touching this file at all.)
  * ─────────────────────────────────────────────────────────────────────────── */
 export const phase: Phase = "invitation";
 
@@ -31,21 +32,24 @@ export const phase: Phase = "invitation";
  *  2.  T H E   C O U P L E
  * ─────────────────────────────────────────────────────────────────────────── */
 export const couple = {
-  // How the names appear in the large script across the arch.
-  bride: {
-    name: "Adeena",
-    // The traditional line beneath the name. Set to "" to leave it out.
-    lineage: "Daughter of Mr & Mrs Ch. Farooqi",
+  // The two of them, in the order you would like them read. Whoever is first
+  // appears first everywhere — the arch, the share card, the calendar entry —
+  // so this is the only place that order needs deciding.
+  partnerOne: {
+    name: "Zhi Wei",
+    // A line beneath the name — parents, family, however they should be
+    // introduced. Left empty, it simply does not appear.
+    lineage: "",
   },
-  groom: {
-    name: "Daanish",
-    lineage: "Son of Mr & Mrs S. Rehman",
+  partnerTwo: {
+    name: "Nicole",
+    lineage: "",
   },
 
-  // The two letters pressed into the wax seal on the envelope.
-  monogram: "D&A",
+  // The initials pressed into the wax seal on the envelope.
+  monogram: "Z&N",
 
-  // The word joining the names. "&" or "and" or "•" all look right.
+  // The word joining the names. "&" or "and" or "•" all sit well.
   ampersand: "&",
 } as const;
 
@@ -53,177 +57,204 @@ export const couple = {
  *  3.  T H E   D A T E
  *
  *  `iso` must stay in YYYY-MM-DDTHH:MM form — the countdown, the calendar
- *  button and the search-engine listing all read it. `display` is the pretty
- *  version shown on screen; write it however you like.
+ *  button and the search listing all read it. `display` is the pretty version
+ *  on screen, written however you like.
  * ─────────────────────────────────────────────────────────────────────────── */
 export const weddingDate = {
-  iso: "2026-11-14T18:00",
-  display: "Saturday, the Fourteenth of November",
+  // The first guests arrive for the cocktail reception at 11:30.
+  iso: "2026-10-11T11:30",
+  display: "Sunday, the Eleventh of October",
   year: "Two Thousand & Twenty-Six",
-  // IANA timezone — keeps the countdown honest for guests abroad.
-  timeZone: "Europe/Stockholm",
+  place: "Singapore",
+  timeZone: "Asia/Singapore",
 };
 
 /* ───────────────────────────────────────────────────────────────────────────
  *  4.  T H E   O P E N I N G   W O R D S
  * ─────────────────────────────────────────────────────────────────────────── */
 export const opening = {
-  // Shown in Arabic script above the arch. Set to "" to omit.
-  bismillah: "بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ",
-  bismillahTranslit: "In the name of Allah, the Most Gracious, the Most Merciful",
+  // The small line above the names on the arch.
+  // Kept to what is actually known. A line like "Together with their
+  // families" implies who is hosting, which is not ours to assume.
+  eyebrow: "The wedding of",
 
-  // The line above the couple's names on the arch.
-  eyebrow: "Welcome to the Nikkah Ceremony of",
-
-  // The invitation proper.
-  salutation: "Dear Friends and Family",
-  body: "Join us for an evening of love, laughter, duas, and unforgettable memories as we begin our forever.",
+  salutation: "With Joyful Hearts",
+  body: "Your presence means the world to us, and we would be honoured to have you join our wedding celebration.",
 };
 
-/* A verse or quotation, set apart on its own. Set `enabled: false` to hide. */
+/* A line set apart on its own. Set `enabled: false` to leave it out. */
 export const verse = {
   enabled: true,
-  text: "And among His signs is that He created for you mates from among yourselves, that you may dwell in tranquillity with them, and He has put love and mercy between your hearts.",
-  attribution: "Surah Ar-Rum, 30:21",
+  text: "One drink became many more, and somewhere between all the laughter, conversations and late nights, we realised how much we actually had in common.",
+  attribution: "",
 };
 
 /* ───────────────────────────────────────────────────────────────────────────
- *  5.  T H E   C E L E B R A T I O N S
+ *  5.  T H E I R   S T O R Y
  *
- *  Add, remove or reorder freely — the page builds itself from this list.
- *  Delete an entry by removing everything between its { and its },
+ *  Each string is one paragraph. Add or remove as you like.
  * ─────────────────────────────────────────────────────────────────────────── */
-export const events = [
-  {
-    name: "Mehndi",
-    tagline: "An evening of colour, music and henna",
-    date: "Thursday, 12 November 2026",
-    time: "7:00 PM onwards",
-    venue: "The Garden Room",
-    address: "Strandvägen 12, Stockholm",
-    dressCode: "Festive colours",
-  },
-  {
-    name: "Nikkah",
-    tagline: "The ceremony, and the promise",
-    date: "Saturday, 14 November 2026",
-    time: "6:00 PM",
-    venue: "Grand Mosque Hall",
-    address: "Kapellgränd 10, Stockholm",
-    dressCode: "Formal traditional",
-  },
-  {
-    name: "Walima",
-    tagline: "Dinner, and the first celebration as one",
-    date: "Sunday, 15 November 2026",
-    time: "7:30 PM",
-    venue: "Villa Aurora",
-    address: "Djurgårdsvägen 68, Stockholm",
-    dressCode: "Black tie with a touch of gold",
-  },
-];
+export const story = {
+  enabled: true,
+  heading: "Our Story",
+  paragraphs: [
+    "It all started back in 2012 at the IT Show in Suntec City Convention Hall, where both of us were working at a Singtel booth. Zhi Wei was handling inventory while Nicole was busy doing face-to-face sales for mobile and tablet accessories alongside his sister. Back then, we barely interacted — and life simply carried on in different directions.",
+    "Even so, Instagram quietly kept us connected over the years, letting us catch little glimpses of each other's lives from afar. Fast forward to 2022, when Zhi Wei finally slid into Nicole's DMs after replying to one of the fun questionnaires on her Instagram story. What started as casual conversations slowly turned into a friendship, and after saying “Let's catch up for drinks someday” countless times over the years… we finally did.",
+    "Then came our trip to Phuket in 2022 — the trip that changed everything. Somewhere between the sunsets, adventures, and little moments together, we both knew we had found someone truly special. From there, love and trust blossomed naturally, and what started as a simple friendship became the forever we have today.",
+  ],
+};
 
 /* ───────────────────────────────────────────────────────────────────────────
- *  6.  T H E   E V E N I N G,   H O U R   B Y   H O U R
+ *  6.  T H E   D A Y,   H O U R   B Y   H O U R
  * ─────────────────────────────────────────────────────────────────────────── */
 export const timeline = [
-  { time: "6:00 PM", title: "Guest Arrival", detail: "Welcome drinks and photographs" },
-  { time: "6:45 PM", title: "Entrance of the Bride", detail: "Please be seated by this time" },
-  { time: "7:15 PM", title: "Nikkah Ceremony", detail: "The vows, and the signing" },
-  { time: "8:00 PM", title: "Duas & Blessings", detail: "Family and elders" },
-  { time: "8:30 PM", title: "Dinner Is Served", detail: "" },
-  { time: "10:00 PM", title: "The First Dance", detail: "And the evening opens up" },
-  { time: "12:00 AM", title: "Farewell", detail: "Rukhsati" },
+  {
+    time: "11:30 AM",
+    title: "Cocktail Reception",
+    detail: "Join us early to enjoy the cocktails, snacks, drinks and photobooth.",
+  },
+  {
+    time: "12:00 PM",
+    title: "Solemnisation",
+    detail:
+      "Open to everyone. Grab your drinks with you and get seated to witness our solemnisation ceremony.",
+  },
+  {
+    time: "12:30 PM",
+    title: "Lunch Banquet",
+    detail:
+      "After we say “I do”, we're keeping the celebration going with great food, drinks and wonderful company. Come ready to celebrate with us.",
+  },
 ];
 
 /* ───────────────────────────────────────────────────────────────────────────
  *  7.  G E T T I N G   T H E R E
  * ─────────────────────────────────────────────────────────────────────────── */
 export const venue = {
-  name: "Grand Mosque Hall",
-  address: "Kapellgränd 10, 116 25 Stockholm, Sweden",
-  // Paste any map link here — Google, Apple or Waze all work.
-  mapUrl: "https://maps.google.com/?q=Kapellgr%C3%A4nd+10+Stockholm",
-  note: "Parking is available on site. The hall is fully step-free.",
+  name: "Sofitel Singapore City Centre",
+  address: "9 Wallich Street, Singapore 078885",
+  mapUrl: "https://maps.google.com/?q=Sofitel+Singapore+City+Centre+9+Wallich+Street",
+
+  // Each of these becomes its own card. Remove one by deleting its block.
+  directions: [
+    {
+      mode: "By car",
+      detail:
+        "Park at Guoco Tower Carpark B — it gives the most direct access to the hotel lobby. Complimentary parking tickets are available; do collect them at the reception.",
+    },
+    {
+      mode: "By train",
+      detail:
+        "Tanjong Pagar MRT (EW15). Follow signs to Exit A / Guoco Tower, take the escalator or lift up to Level 5, and the hotel entrance is visible inside the connected building. Very convenient even if it's raining.",
+    },
+  ],
 };
 
 /* ───────────────────────────────────────────────────────────────────────────
- *  8.  R S V P      (shown while phase is "invitation")
+ *  8.  G O O D   T O   K N O W
+ *
+ *  The questions guests actually ask. Add or remove freely.
+ * ─────────────────────────────────────────────────────────────────────────── */
+export const faq = [
+  {
+    question: "What should I wear?",
+    answer: "Smart casual — an outfit for a luncheon, to be specific.",
+  },
+  {
+    question: "Can I bring a date?",
+    answer: "Please check your invite for your +1.",
+  },
+  {
+    question: "What's the RSVP deadline?",
+    answer: "Please reply by the 31st of July, so we can get an accurate headcount.",
+  },
+  {
+    question: "I have a dietary restriction — what should I do?",
+    answer:
+      "Do let us know beforehand, so we can have the restaurant prepare according to your needs.",
+  },
+];
+
+/* ───────────────────────────────────────────────────────────────────────────
+ *  9.  R S V P      (shown while phase is "invitation")
+ *
+ *  Replies are handled on the couple's own Joy page, so this section is a
+ *  single invitation to go there rather than a second form collecting the
+ *  same answers twice.
  * ─────────────────────────────────────────────────────────────────────────── */
 export const rsvp = {
   enabled: true,
   heading: "Will you be there?",
-  note: "Kindly reply by the first of October so we can hold your seat.",
-  deadlineDisplay: "1 October 2026",
-  // The most people one guest may bring, themselves included.
-  maxPartySize: 6,
-  // Ask each guest which celebrations they will attend. Names must match
-  // the `name` values in the events list above.
-  askWhichEvents: true,
+  note: "Kindly reply by the thirty-first of July, so we can hold your seat.",
+  deadlineDisplay: "31 July 2026",
+  buttonLabel: "Reply to the invitation",
+  url: "https://withjoy.com/nicole-zhiwei/rsvp?v=1",
 };
 
 /* ───────────────────────────────────────────────────────────────────────────
- *  9.  T H E   G A L L E R Y      (shown once phase is "keepsake")
+ * 10.  W H O   T O   A S K
  *
- *  Drop photographs into the /public/gallery folder, then list them here.
- *  `alt` is read aloud by screen readers and shown if an image fails to
- *  load — write it as you would describe the photo to someone on the phone.
+ *  Left deliberately blank: this repository may be public one day, and the
+ *  couple's personal numbers should not be sitting in it. Fill them in only
+ *  if the site is going somewhere private, or leave them out and let the
+ *  Joy page carry them.
+ * ─────────────────────────────────────────────────────────────────────────── */
+export const contacts = {
+  enabled: false,
+  heading: "Any questions?",
+  people: [
+    { name: "Zhi Wei", contact: "" },
+    { name: "Nicole", contact: "" },
+  ],
+};
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * 11.  T H E   G A L L E R Y      (shown once phase is "keepsake")
  *
- *  Leave the list empty and the gallery shows a graceful "coming soon" card
- *  instead of breaking.
+ *  Drop photographs into /public/gallery, then list them here. `alt` is read
+ *  aloud by screen readers and shown if an image fails — write it as you
+ *  would describe the photo to someone on the phone.
+ *
+ *  Leave the list empty and the gallery shows a graceful card instead of
+ *  breaking, so the switch to "keepsake" is safe at any time.
  * ─────────────────────────────────────────────────────────────────────────── */
 export const gallery: { src: string; alt: string; span?: "wide" | "tall" }[] = [
-  // { src: "/gallery/01.jpg", alt: "Adeena and Daanish beneath the arch", span: "wide" },
-  // { src: "/gallery/02.jpg", alt: "Signing the nikkah nama" },
+  // { src: "/gallery/01.jpg", alt: "Zhi Wei and Nicole at sunrise on the water", span: "wide" },
 ];
 
-/* A film from the day — a YouTube or Vimeo link. Set to "" to leave it out. */
+/* A film from the day — a YouTube or Vimeo embed link. "" leaves it out. */
 export const filmUrl = "";
 
 /* ───────────────────────────────────────────────────────────────────────────
- * 10.  M E S S A G E S   F R O M   G U E S T S      (phase "keepsake")
- *
- *  Paste in the notes people send — from the RSVP form, from WhatsApp, from
- *  the cards on the night. They appear as a wall of handwriting.
+ * 12.  M E S S A G E S   F R O M   G U E S T S      (phase "keepsake")
  * ─────────────────────────────────────────────────────────────────────────── */
-export const guestbook: { from: string; message: string }[] = [
-  // { from: "Nani", message: "May your home always be full of laughter." },
-];
+export const guestbook: { from: string; message: string }[] = [];
 
 /* ───────────────────────────────────────────────────────────────────────────
- * 11.  T H E   L A S T   W O R D
+ * 13.  T H E   L A S T   W O R D
  * ─────────────────────────────────────────────────────────────────────────── */
 export const closing = {
-  // Shown only while phase is "invitation".
   invitation: "We cannot wait to celebrate with you.",
-  // Shown once phase is "keepsake".
   keepsake: "Thank you for standing with us on the best day of our lives.",
-  dua: "بَارَكَ اللَّهُ لَكُمَا وَبَارَكَ عَلَيْكُمَا",
-  duaTranslit: "May Allah bless you both, and bless your union.",
 };
 
 /* ───────────────────────────────────────────────────────────────────────────
- * 12.  H O W   I T   L O O K S   W H E N   S H A R E D
- *
- *  The title and line that appear when the link is sent on WhatsApp,
- *  iMessage or Instagram, and what search engines list.
+ * 14.  H O W   I T   L O O K S   W H E N   S H A R E D
  * ─────────────────────────────────────────────────────────────────────────── */
 export const meta = {
-  title: `${couple.groom.name} ${couple.ampersand} ${couple.bride.name}`,
+  title: `${couple.partnerOne.name} ${couple.ampersand} ${couple.partnerTwo.name}`,
   tagline: "You are invited",
-  description: `Join ${couple.groom.name} and ${couple.bride.name} as they begin their forever — ${weddingDate.display}, ${weddingDate.year}.`,
+  description: `Join ${couple.partnerOne.name} and ${couple.partnerTwo.name} as they begin their forever — ${weddingDate.display}, ${weddingDate.year}, in ${weddingDate.place}.`,
 };
 
 /* ───────────────────────────────────────────────────────────────────────────
- * 13.  T H E   E N V E L O P E
+ * 15.  T H E   E N V E L O P E
  *
- *  The sealed envelope guests meet first. `waxColor` is the seal — a deep
- *  oxblood by default, the way a pressed wax seal actually looks. The initials
- *  in `couple.monogram` are pressed into it.
+ *  The sealed envelope guests meet first. The initials in `couple.monogram`
+ *  are pressed into the wax.
  *
  *  `emboss` adds a raised botanical pattern across the paper. Off by default,
- *  for the clean smooth stock of a classic envelope — set it to true if you
- *  would rather have the florals.
+ *  for clean smooth stock — set it true if you would rather have the florals.
  * ─────────────────────────────────────────────────────────────────────────── */
 export const envelope = {
   waxColor: "#7d2228",
@@ -232,17 +263,15 @@ export const envelope = {
 };
 
 /* ───────────────────────────────────────────────────────────────────────────
- * 14.  M O T I O N
+ * 16.  M O T I O N
  *
- *  The envelope, the petals and the depth are built in real 3D. If you ever
- *  want the quieter version, set `webgl` to false — the site keeps its full
+ *  Set `webgl` to false for the quieter version — the site keeps its whole
  *  design and simply stops rendering the three-dimensional layer.
  *
- *  Guests who ask their phone to reduce motion are always given the calm
- *  version automatically. You do not need to do anything for that.
+ *  Guests who ask their phone to reduce motion always get the calm version
+ *  automatically. You do not need to do anything for that.
  * ─────────────────────────────────────────────────────────────────────────── */
 export const motion = {
   webgl: true,
-  // Petals drifting through the arch. 0 turns them off.
-  petalCount: 90,
+  petalCount: 70,
 };

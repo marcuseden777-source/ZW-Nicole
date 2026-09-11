@@ -13,7 +13,7 @@ export function Timeline() {
       <div className="mx-auto max-w-2xl">
         <header className="text-center">
           <h2 id="timeline-heading" className="u-reveal u-script text-[clamp(2.5rem,9vw,4rem)] text-gold-deep">
-            The Evening
+            The Day
           </h2>
           <Divider className="mx-auto mt-5" />
         </header>

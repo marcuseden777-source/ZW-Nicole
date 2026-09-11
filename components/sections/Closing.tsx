@@ -20,20 +20,8 @@ export function Closing({ phase }: { phase: Phase }) {
         </p>
 
         <Divider className="mx-auto my-9" />
-
-        {content.closing.dua && (
-          <>
-            <p className="u-reveal u-arabic text-[clamp(1.1rem,3.6vw,1.5rem)] text-gold-deep">
-              {content.closing.dua}
-            </p>
-            <p className="u-reveal u-eyebrow mt-4 normal-case tracking-[0.16em]">
-              {content.closing.duaTranslit}
-            </p>
-          </>
-        )}
-
         <p className="u-script u-foil mt-12 text-[clamp(2.25rem,8vw,3.25rem)]">
-          {content.couple.groom.name} {content.couple.ampersand} {content.couple.bride.name}
+          {content.couple.partnerOne.name} {content.couple.ampersand} {content.couple.partnerTwo.name}
         </p>
         <p className="u-eyebrow mt-3">{content.weddingDate.year}</p>
       </div>

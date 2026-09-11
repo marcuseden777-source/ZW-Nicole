@@ -104,12 +104,6 @@ body::before {
   letter-spacing: 0.01em;
 }
 
-.u-arabic {
-  font-family: "Amiri", "Scheherazade New", "Traditional Arabic", serif;
-  direction: rtl;
-  line-height: 2;
-}
-
 /* Gold foil — a real gradient with a highlight running through it,
    not a flat swatch pretending to be metal. */
 .u-foil {

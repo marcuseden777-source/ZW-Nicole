@@ -1,11 +1,12 @@
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { Closing } from "@/components/sections/Closing";
 import { Countdown } from "@/components/sections/Countdown";
-import { Events } from "@/components/sections/Events";
+import { Faq } from "@/components/sections/Faq";
 import { Hero } from "@/components/sections/Hero";
 import { Invitation } from "@/components/sections/Invitation";
 import { Gallery, Guestbook } from "@/components/sections/Keepsake";
 import { Rsvp } from "@/components/sections/Rsvp";
+import { Story } from "@/components/sections/Story";
 import { Timeline } from "@/components/sections/Timeline";
 import { Venue } from "@/components/sections/Venue";
 import { Welcome } from "@/components/sections/Welcome";
@@ -42,19 +43,21 @@ export default function Page() {
         <Hero />
         <Welcome />
         <Invitation />
-        <Events />
-        <Timeline />
+        <Story />
 
         {phase === "invitation" ? (
           <>
+            <Timeline />
             <Countdown />
             <Venue />
+            <Faq />
             <Rsvp />
           </>
         ) : (
           <>
             <Gallery />
             <Guestbook />
+            <Timeline />
             <Venue />
           </>
         )}
@@ -72,11 +75,10 @@ export default function Page() {
  * with a date and a place — rather than leaving them to guess from the prose.
  */
 function StructuredData() {
-  const ceremony = content.events[0];
   const schema = {
     "@context": "https://schema.org",
     "@type": "Event",
-    name: `${content.couple.groom.name} ${content.couple.ampersand} ${content.couple.bride.name} — ${ceremony?.name ?? "Wedding"}`,
+    name: `${content.couple.partnerOne.name} ${content.couple.ampersand} ${content.couple.partnerTwo.name}`,
     description: content.meta.description,
     startDate: content.weddingDate.iso,
     eventStatus: "https://schema.org/EventScheduled",

@@ -45,10 +45,16 @@ function flapShape(halfWidth: number, depth: number, apexBleed: number) {
   return shape;
 }
 
-/** The scalloped edge of a pressed wax seal — irregular, because wax is. */
+/**
+ * The scalloped edge of a pressed wax seal.
+ *
+ * Three frequencies layered: the regular lobes the die presses, a slower
+ * wobble for the way molten wax spreads unevenly under the press, and a little
+ * fine noise. A single clean sine reads as a cog, not as wax.
+ */
 function sealShape(radius: number, half: "left" | "right" | "full") {
   const shape = new THREE.Shape();
-  const steps = 128;
+  const steps = 192;
   const rand = (i: number) => Math.sin(i * 12.9898) * 43758.5453;
 
   const from = half === "right" ? -Math.PI / 2 : half === "left" ? Math.PI / 2 : 0;
@@ -57,9 +63,10 @@ function sealShape(radius: number, half: "left" | "right" | "full") {
   for (let i = 0; i <= steps; i++) {
     const t = i / steps;
     const a = from + (to - from) * t;
-    const scallop = 1 + Math.sin(a * 11) * 0.055;
-    const jitter = 1 + (rand(i) - Math.floor(rand(i)) - 0.5) * 0.03;
-    const r = radius * scallop * jitter;
+    const lobes = Math.sin(a * 10 + 0.4) * 0.072;
+    const spread = Math.sin(a * 3 + 1.7) * 0.038 + Math.sin(a * 5.5 - 0.8) * 0.022;
+    const jitter = (rand(i) - Math.floor(rand(i)) - 0.5) * 0.022;
+    const r = radius * (1 + lobes + spread + jitter);
     const x = Math.cos(a) * r;
     const y = Math.sin(a) * r;
     if (i === 0) shape.moveTo(x, y);
@@ -135,10 +142,17 @@ export function Envelope({ openness, monogram }: Props) {
       color: envelopeStyle.waxColor,
       normalMap: relief,
       normalScale: new THREE.Vector2(2.2, 2.2),
-      roughness: 0.34,
-      metalness: 0.05,
-      clearcoat: 0.85,
-      clearcoatRoughness: 0.32,
+      // Wax is a dielectric with a hard lacquered skin: rough underneath,
+      // glossy on top, so the highlight sits on the surface rather than
+      // spreading through the colour.
+      roughness: 0.52,
+      metalness: 0,
+      clearcoat: 1,
+      clearcoatRoughness: 0.14,
+      reflectivity: 0.6,
+      sheen: 0.3,
+      sheenColor: new THREE.Color("#ff9a86"),
+      sheenRoughness: 0.5,
       transparent: true,
     });
   }, [relief]);
@@ -155,27 +169,27 @@ export function Envelope({ openness, monogram }: Props) {
     const back = new THREE.ExtrudeGeometry(roundedRect(W, H, 0.05), {
       depth: 0.016,
       bevelEnabled: true,
-      bevelThickness: 0.006,
-      bevelSize: 0.006,
-      bevelSegments: 2,
+      bevelThickness: 0.004,
+      bevelSize: 0.004,
+      bevelSegments: 3,
       curveSegments: 16,
     });
 
     const side = new THREE.ExtrudeGeometry(flapShape(H / 2, W / 2, FLAP_OVERLAP), {
       depth: 0.008,
       bevelEnabled: true,
-      bevelThickness: 0.004,
-      bevelSize: 0.004,
-      bevelSegments: 2,
+      bevelThickness: 0.0035,
+      bevelSize: 0.0035,
+      bevelSegments: 3,
       curveSegments: 20,
     });
 
     const bottom = new THREE.ExtrudeGeometry(flapShape(W / 2, H * 0.42, FLAP_OVERLAP), {
       depth: 0.008,
       bevelEnabled: true,
-      bevelThickness: 0.004,
-      bevelSize: 0.004,
-      bevelSegments: 2,
+      bevelThickness: 0.0035,
+      bevelSize: 0.0035,
+      bevelSegments: 3,
       curveSegments: 20,
     });
 
@@ -189,23 +203,17 @@ export function Envelope({ openness, monogram }: Props) {
       curveSegments: 20,
     });
 
-    const sealL = new THREE.ExtrudeGeometry(sealShape(SEAL_RADIUS, "left"), {
-      depth: 0.03,
+    const sealBevel = {
+      depth: 0.012,
       bevelEnabled: true,
-      bevelThickness: 0.014,
-      bevelSize: 0.012,
-      bevelSegments: 4,
+      bevelThickness: 0.026,
+      bevelSize: 0.022,
+      bevelSegments: 8,
       curveSegments: 4,
-    });
+    } as const;
 
-    const sealR = new THREE.ExtrudeGeometry(sealShape(SEAL_RADIUS, "right"), {
-      depth: 0.03,
-      bevelEnabled: true,
-      bevelThickness: 0.014,
-      bevelSize: 0.012,
-      bevelSegments: 4,
-      curveSegments: 4,
-    });
+    const sealL = new THREE.ExtrudeGeometry(sealShape(SEAL_RADIUS, "left"), sealBevel);
+    const sealR = new THREE.ExtrudeGeometry(sealShape(SEAL_RADIUS, "right"), sealBevel);
 
     const invitationCard = new THREE.ExtrudeGeometry(
       roundedRect(W * 0.9, H * 0.82, 0.02),
@@ -247,7 +255,7 @@ export function Envelope({ openness, monogram }: Props) {
     const swing = THREE.MathUtils.clamp((t - 0.3) / 0.42, 0, 1);
     const swingEased = 1 - Math.pow(1 - swing, 3);
     if (flap.current) {
-      flap.current.rotation.x = swingEased * 2.55;
+      flap.current.rotation.x = -0.05 + swingEased * 2.6;
     }
 
     // The invitation rises out, last.
@@ -301,7 +309,7 @@ export function Envelope({ openness, monogram }: Props) {
 
       {/* The invitation, waiting inside */}
       <group ref={card} position={[0, 0, 0.0175]}>
-        <mesh geometry={geometries.invitationCard}>
+        <mesh geometry={geometries.invitationCard} castShadow receiveShadow>
           <meshPhysicalMaterial
             color="#fffaf1"
             roughness={0.85}
@@ -316,21 +324,21 @@ export function Envelope({ openness, monogram }: Props) {
       {/* Left and right folded panels. The rotation has to carry each apex
           *inward* to the seal — turned the other way, the panels splay out
           past the edges and the envelope stops being a rectangle. */}
-      <group position={[-W / 2, 0, 0.023]} rotation={[0, 0, Math.PI / 2]}>
-        <mesh geometry={geometries.side} material={paper} castShadow />
+      <group position={[-W / 2, 0, 0.023]} rotation={[-0.06, 0, Math.PI / 2]}>
+        <mesh geometry={geometries.side} material={paper} castShadow receiveShadow />
       </group>
-      <group position={[W / 2, 0, 0.023]} rotation={[0, 0, -Math.PI / 2]}>
-        <mesh geometry={geometries.side} material={paper} castShadow />
+      <group position={[W / 2, 0, 0.023]} rotation={[-0.045, 0, -Math.PI / 2]}>
+        <mesh geometry={geometries.side} material={paper} castShadow receiveShadow />
       </group>
 
       {/* Bottom panel */}
-      <group position={[0, -H / 2, 0.031]} rotation={[0, 0, Math.PI]}>
-        <mesh geometry={geometries.bottom} material={paper} castShadow />
+      <group position={[0, -H / 2, 0.031]} rotation={[-0.055, 0, Math.PI]}>
+        <mesh geometry={geometries.bottom} material={paper} castShadow receiveShadow />
       </group>
 
       {/* Top panel — hinged at the fold */}
       <group ref={flap} position={[0, H / 2, 0.039]}>
-        <mesh geometry={geometries.top} material={paper} castShadow />
+        <mesh geometry={geometries.top} material={paper} castShadow receiveShadow />
       </group>
 
       {/* The wax seal, in two halves waiting to be broken */}
@@ -342,7 +350,7 @@ export function Envelope({ openness, monogram }: Props) {
           ]
         ).map(([ref, geometry, side]) => (
           <group key={side} ref={ref}>
-            <mesh geometry={geometry} material={wax} castShadow />
+            <mesh geometry={geometry} material={wax} castShadow receiveShadow />
           </group>
         ))}
       </group>

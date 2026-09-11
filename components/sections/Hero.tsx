@@ -59,11 +59,11 @@ export function Hero() {
           >
             <p className="u-eyebrow mb-5">{content.opening.eyebrow}</p>
             <h1 className="u-script u-foil text-[clamp(3rem,12vw,7rem)]">
-              <span className="block">{content.couple.groom.name}</span>
+              <span className="block">{content.couple.partnerOne.name}</span>
               <span className="my-1 block text-[0.45em] not-italic">
                 {content.couple.ampersand}
               </span>
-              <span className="block">{content.couple.bride.name}</span>
+              <span className="block">{content.couple.partnerTwo.name}</span>
             </h1>
             <Divider className="mx-auto my-7" />
             <p className="u-display text-[clamp(0.85rem,2.6vw,1.05rem)] tracking-[0.2em] text-ink-soft uppercase">

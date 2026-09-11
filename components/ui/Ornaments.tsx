@@ -41,9 +41,9 @@ export function Arch({
             </linearGradient>
           </defs>
 
-          {/* Shoulders sweeping up to a point */}
+          {/* A soft, rounded crown */}
           <path
-            d="M8 162 Q8 86 74 48 Q150 6 200 46 Q250 6 326 48 Q392 86 392 162"
+            d="M8 162 Q8 74 82 40 Q150 12 200 12 Q250 12 318 40 Q392 74 392 162"
             fill="none"
             stroke="url(#arch-foil)"
             strokeWidth="1.5"
@@ -51,20 +51,11 @@ export function Arch({
           />
           {/* The inner reveal a carved arch has */}
           <path
-            d="M24 162 Q24 98 82 64 Q150 28 200 64 Q250 28 318 64 Q376 98 376 162"
+            d="M24 162 Q24 90 92 58 Q152 32 200 32 Q248 32 308 58 Q376 90 376 162"
             fill="none"
             stroke="url(#arch-foil)"
             strokeWidth="0.8"
             strokeOpacity="0.5"
-            vectorEffect="non-scaling-stroke"
-          />
-          {/* The finial */}
-          <path
-            d="M200 46 V22 M192 32 Q200 14 208 32"
-            fill="none"
-            stroke="url(#arch-foil)"
-            strokeWidth="1.2"
-            strokeLinecap="round"
             vectorEffect="non-scaling-stroke"
           />
         </svg>
@@ -78,45 +69,6 @@ export function Arch({
 
       <div className="relative">{children}</div>
     </div>
-  );
-}
-
-/** A hanging lantern, as in the reference — used in pairs, flanking the arch. */
-export function Lantern({
-  className = "",
-  flip = false,
-}: {
-  className?: string;
-  flip?: boolean;
-}) {
-  return (
-    <svg
-      viewBox="0 0 60 150"
-      className={className}
-      style={flip ? { transform: "scaleX(-1)" } : undefined}
-      aria-hidden="true"
-    >
-      <defs>
-        <radialGradient id="lantern-glow" cx="50%" cy="58%" r="52%">
-          <stop offset="0%" stopColor="#ffd89a" stopOpacity="0.95" />
-          <stop offset="60%" stopColor="#e8b465" stopOpacity="0.35" />
-          <stop offset="100%" stopColor="#e8b465" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-      <g stroke="#b9964f" strokeWidth="1.1" fill="none" strokeLinecap="round">
-        {/* The chain */}
-        <path d="M30 0 V28" />
-        <circle cx="30" cy="32" r="4" />
-        {/* The body: a tapered lantern with a domed cap and a finial */}
-        <path d="M30 36 L14 54 Q10 78 14 102 L30 120 L46 102 Q50 78 46 54 Z" />
-        <ellipse cx="30" cy="54" rx="16" ry="4" />
-        <ellipse cx="30" cy="102" rx="16" ry="4" />
-        <path d="M30 120 V132 M24 132 H36 M30 132 V142" />
-        {/* The fretwork */}
-        <path d="M22 62 Q30 70 38 62 M22 78 Q30 86 38 78 M22 94 Q30 86 38 94" strokeWidth="0.6" strokeOpacity="0.7" />
-      </g>
-      <ellipse cx="30" cy="78" rx="20" ry="30" fill="url(#lantern-glow)" />
-    </svg>
   );
 }
 
