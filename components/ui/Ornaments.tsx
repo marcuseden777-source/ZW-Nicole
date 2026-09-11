@@ -94,7 +94,18 @@ export function Divider({ className = "" }: { className?: string }) {
   );
 }
 
-/** The wax seal, flattened — used as a signature mark through the page. */
+/**
+ * The wax seal.
+ *
+ * Not a flat disc with a letter on it. Wax is poured, so it domes; it is
+ * lacquered, so it takes a hard specular; it sits proud of the paper, so it
+ * throws a shadow; and the die presses the monogram IN, which means the
+ * letters carry a shadow on one side and a highlight on the other.
+ *
+ * The dome is real shading, not a painted gradient: the shape's own alpha is
+ * blurred into a height field and lit with feSpecularLighting, so the
+ * highlight follows the scalloped rim instead of ignoring it.
+ */
 export function SealMark({
   monogram,
   className = "",
@@ -102,37 +113,87 @@ export function SealMark({
   monogram: string;
   className?: string;
 }) {
-  // The scalloped rim, generated rather than hand-drawn so it stays regular.
-  const points = Array.from({ length: 128 }, (_, i) => {
-    const a = (i / 128) * Math.PI * 2;
-    const r = 46 * (1 + Math.sin(a * 11) * 0.055);
+  // A stable id per monogram, so two seals on one page cannot collide in the
+  // SVG id namespace and steal each other's filters.
+  const uid = `seal-${monogram.replace(/[^a-z0-9]/gi, "") || "mark"}`;
+
+  // The scalloped rim, generated rather than hand-drawn, with the same three
+  // layered frequencies the three-dimensional seal uses so the two match.
+  const points = Array.from({ length: 180 }, (_, i) => {
+    const a = (i / 180) * Math.PI * 2;
+    const lobes = Math.sin(a * 10 + 0.4) * 0.072;
+    const spread = Math.sin(a * 3 + 1.7) * 0.038 + Math.sin(a * 5.5 - 0.8) * 0.022;
+    const n = Math.sin(i * 12.9898) * 43758.5453;
+    const jitter = (n - Math.floor(n) - 0.5) * 0.022;
+    const r = 44 * (1 + lobes + spread + jitter);
     return `${(50 + Math.cos(a) * r).toFixed(2)},${(50 + Math.sin(a) * r).toFixed(2)}`;
   }).join(" ");
 
   return (
     <svg viewBox="0 0 100 100" className={className} role="img" aria-label={`${monogram} monogram`}>
       <defs>
-        {/* The same oxblood as the wax on the three-dimensional envelope —
-            a guest on the fallback should not meet a different seal. */}
-        <radialGradient id="seal-wax" cx="38%" cy="30%" r="74%">
-          <stop offset="0%" stopColor="#a8414a" />
-          <stop offset="48%" stopColor={envelopeStyle.waxColor} />
-          <stop offset="100%" stopColor="#5e161c" />
+        {/* The body colour: lit from the upper left, deepening into the rim. */}
+        <radialGradient id={`${uid}-wax`} cx="36%" cy="30%" r="78%">
+          <stop offset="0%" stopColor="#a8404a" />
+          <stop offset="38%" stopColor="#8d2830" />
+          <stop offset="72%" stopColor="#6d1a21" />
+          <stop offset="100%" stopColor="#4a0f15" />
         </radialGradient>
+
+        {/* Real domed shading, derived from the shape's own silhouette. */}
+        <filter id={`${uid}-dome`} x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur in="SourceAlpha" stdDeviation="3.2" result="height" />
+          <feSpecularLighting
+            in="height"
+            surfaceScale="4.5"
+            specularConstant="0.78"
+            specularExponent="24"
+            lightingColor="#ffe6d2"
+            result="spec"
+          >
+            <fePointLight x="22" y="14" z="62" />
+          </feSpecularLighting>
+          <feComposite in="spec" in2="SourceAlpha" operator="in" result="specClipped" />
+          <feComposite
+            in="SourceGraphic"
+            in2="specClipped"
+            operator="arithmetic"
+            k1="0"
+            k2="1"
+            k3="1"
+            k4="0"
+          />
+        </filter>
+
+        {/* The seal sits proud of the paper and says so. */}
+        <filter id={`${uid}-cast`} x="-40%" y="-40%" width="180%" height="180%">
+          <feDropShadow dx="0.8" dy="2.2" stdDeviation="2" floodColor="#4a2a18" floodOpacity="0.42" />
+        </filter>
       </defs>
-      <polygon points={points} fill="url(#seal-wax)" />
-      <circle cx="50" cy="50" r="38" fill="none" stroke="#4d1217" strokeWidth="0.9" strokeOpacity="0.55" />
-      <text
-        x="50"
-        y="50"
-        textAnchor="middle"
-        dominantBaseline="central"
-        fill="#4d1217"
-        fillOpacity="0.7"
-        style={{ fontFamily: "var(--font-script), cursive", fontSize: "34px" }}
-      >
-        {monogram}
-      </text>
+
+      <g filter={`url(#${uid}-cast)`}>
+        <polygon points={points} fill={`url(#${uid}-wax)`} filter={`url(#${uid}-dome)`} />
+
+        {/* The ring the die leaves, pressed in: dark on the light side,
+            catching light on the far side. */}
+        <circle cx="50" cy="50" r="35" fill="none" stroke="#3d0c11" strokeOpacity="0.55" strokeWidth="1.6" />
+        <circle cx="50.5" cy="50.9" r="35" fill="none" stroke="#c9707a" strokeOpacity="0.3" strokeWidth="0.9" />
+
+        {/* The monogram, pressed in. Drawn three times: the shadow it casts
+            into its own groove, the light catching the far wall, and the
+            letter itself sitting deeper than the surface around it. */}
+        <g style={{ fontFamily: "var(--font-script), cursive", fontSize: "36px" }}>
+          <text x="50" y="51.4" textAnchor="middle" dominantBaseline="central" fill="#38090e" fillOpacity="0.85">
+            {monogram}
+          </text>
+          <text x="50.7" y="52.2" textAnchor="middle" dominantBaseline="central" fill="#d4828b" fillOpacity="0.34">
+            {monogram}
+          </text>
+          <text x="50" y="51" textAnchor="middle" dominantBaseline="central" fill="#6b1a22" fillOpacity="0.92">
+            {monogram}
+          </text>
+        </g>
+      </g>
     </svg>
   );
 }

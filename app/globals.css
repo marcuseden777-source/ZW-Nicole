@@ -173,6 +173,33 @@ body::before {
   }
 }
 
+/* ── Words arriving as the scroll unrolls ────────────────────────
+   Each word works out its own opacity from one custom property set on
+   its container, so revealing a two-hundred-word story costs a single
+   style write per frame rather than two hundred React renders.
+
+   --i is the word's place in the story, --n the total, --told how far
+   the reader has come. The 0.55 spreads the arrival across a little
+   over half the section; the ×9 makes each individual word fade in
+   quickly once its turn comes, so the effect is words appearing rather
+   than the whole paragraph brightening at once. */
+.u-word {
+  opacity: clamp(0.06, calc((var(--told) - (var(--i) / var(--n)) * 0.55) * 9), 1);
+  transition: opacity 260ms linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .u-word {
+    opacity: 1;
+    transition: none;
+  }
+}
+
+/* Nothing should ever be hidden from a guest without scripting. */
+html:not(.js) .u-word {
+  opacity: 1;
+}
+
 /* ── Scroll-reveal ───────────────────────────────────────────────
    Elements rise into place once, as the page is read. Handled by
    IntersectionObserver so nothing animates off-screen. */

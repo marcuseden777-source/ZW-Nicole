@@ -1,6 +1,7 @@
 import { EntryGate } from "@/components/EntryGate";
 import { SkipLink } from "@/components/SkipLink";
 import { GateBoundary } from "@/components/GateBoundary";
+import { Nav } from "@/components/Nav";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { Closing } from "@/components/sections/Closing";
 import { Countdown } from "@/components/sections/Countdown";
@@ -38,6 +39,29 @@ export default function Page() {
       </GateBoundary>
 
       <SmoothScroll />
+
+      {/* The shortcut for the guest in a taxi who wants the address and
+          nothing else. Appears only once the door is open. */}
+      <Nav
+        destinations={
+          phase === "invitation"
+            ? [
+                { id: "welcome-heading", label: "The Invitation" },
+                { id: "story-heading", label: "Our Story" },
+                { id: "timeline-heading", label: "The Day" },
+                { id: "venue-heading", label: "Getting There" },
+                { id: "faq-heading", label: "Good to Know" },
+                { id: "rsvp-heading", label: "RSVP" },
+              ]
+            : [
+                { id: "welcome-heading", label: "The Invitation" },
+                { id: "story-heading", label: "Our Story" },
+                { id: "gallery-heading", label: "The Day" },
+                { id: "guestbook-heading", label: "In Their Words" },
+                { id: "venue-heading", label: "Getting There" },
+              ]
+        }
+      />
 
       {/* Guests arriving with a keyboard or a screen reader should not have to
           scroll through an envelope to reach the details. */}

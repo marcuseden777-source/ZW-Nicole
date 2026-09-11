@@ -288,6 +288,41 @@ export function createSealReliefMap(monogram: string, size = 512): THREE.CanvasT
   return texture;
 }
 
+/**
+ * A soft edge for the unrolling sheet.
+ *
+ * A plane in a scene has a hard rectangular border, which reads as a box
+ * rather than as paper laid on a page. This fades its sides and its foot out
+ * to nothing so it dissolves into the background instead of ending.
+ */
+export function createSheetAlpha(size = 256): THREE.CanvasTexture {
+  const { canvas, ctx } = makeCanvas(size);
+
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, size, size);
+
+  // Sides fade first and hardest — those are the edges that read as a box.
+  const sides = ctx.createLinearGradient(0, 0, size, 0);
+  sides.addColorStop(0, "rgba(0,0,0,1)");
+  sides.addColorStop(0.14, "rgba(0,0,0,0)");
+  sides.addColorStop(0.86, "rgba(0,0,0,0)");
+  sides.addColorStop(1, "rgba(0,0,0,1)");
+  ctx.globalCompositeOperation = "destination-out";
+  ctx.fillStyle = sides;
+  ctx.fillRect(0, 0, size, size);
+
+  // The foot trails off, so the sheet has no visible bottom line.
+  const foot = ctx.createLinearGradient(0, size * 0.72, 0, size);
+  foot.addColorStop(0, "rgba(0,0,0,0)");
+  foot.addColorStop(1, "rgba(0,0,0,1)");
+  ctx.fillStyle = foot;
+  ctx.fillRect(0, 0, size, size);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.NoColorSpace;
+  return texture;
+}
+
 /** A soft petal silhouette for the drifting particles. */
 export function createPetalTexture(size = 128): THREE.CanvasTexture {
   const { canvas, ctx } = makeCanvas(size);
