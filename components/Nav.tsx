@@ -57,6 +57,26 @@ export function Nav({ destinations }: { destinations: Destination[] }) {
       if (e.key === "Escape") {
         setOpen(false);
         trigger.current?.focus();
+        return;
+      }
+      if (e.key !== "Tab") return;
+
+      // The page behind an open menu is not inert, and the menu covers it
+      // completely — so tabbing past the last entry put focus on something
+      // no one could see.
+      const focusable = panel.current?.querySelectorAll<HTMLElement>(
+        'button, [href], [tabindex]:not([tabindex="-1"])',
+      );
+      if (!focusable?.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey && (active === first || !panel.current?.contains(active))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
       }
     };
     window.addEventListener("keydown", onKey);
@@ -73,6 +93,14 @@ export function Nav({ destinations }: { destinations: Destination[] }) {
     el.closest("section")?.querySelectorAll<HTMLElement>(".u-reveal")
       .forEach((n) => n.setAttribute("data-shown", "true"));
     el.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    // The menu closes, so the button that was focused goes inert and focus
+    // falls to <body>. Someone using a mouse sees the page move and thinks
+    // nothing of it; someone using a keyboard or a screen reader is told
+    // nothing and is back at the top of the document. Send focus to the
+    // heading they asked for, which is the thing they actually chose.
+    el.setAttribute("tabindex", "-1");
+    el.focus({ preventScroll: true });
   }, []);
 
   // Never over the door.
@@ -108,7 +136,11 @@ export function Nav({ destinations }: { destinations: Destination[] }) {
         data-menu
         data-outside-overlay
         ref={panel}
-        className="fixed inset-0 z-50 flex flex-col justify-center px-[var(--gutter)]"
+        // `justify-center` alone centres a list that is taller than the
+        // screen by pushing both ends off it, with no way to scroll to
+        // either. `overflow-y-auto` plus `my-auto` on the contents centres
+        // it when it fits and scrolls it when it does not.
+        className="fixed inset-0 z-50 flex flex-col overflow-y-auto overscroll-contain px-[var(--gutter)] py-[clamp(4.5rem,12vh,7rem)]"
         style={{
           background: "var(--color-ivory)",
           opacity: open ? 1 : 0,
@@ -138,7 +170,7 @@ export function Nav({ destinations }: { destinations: Destination[] }) {
           </svg>
         </button>
 
-        <div className="mx-auto w-full max-w-md">
+        <div className="mx-auto my-auto w-full max-w-md">
           <SealMark monogram={content.couple.monogram} className="mb-10 h-14 w-14" />
 
           <nav>
