@@ -1,11 +1,12 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { SealMark } from "@/components/ui/Ornaments";
 import { useCapability } from "@/lib/useCapability";
 import { useEntryGate } from "@/lib/useEntryGate";
+import type { FilmSources } from "@/lib/media";
 import * as content from "@/content/wedding";
 
 // The 3D layer is fetched only once we know the device wants it, and never on
@@ -27,7 +28,7 @@ const Scene = dynamic(() => import("@/components/three/Scene").then((m) => m.Sce
  * a gate should be a gift to the people who can enjoy it, never a wall to
  * everyone else.
  */
-export function EntryGate() {
+export function EntryGate({ bloom }: { bloom: FilmSources | null }) {
   const capability = useCapability();
 
   // A guest who asked their system for reduced motion never meets the door at
@@ -120,6 +121,10 @@ export function EntryGate() {
         )}
       </div>
 
+      {/* Petals opening over the letter as the wax gives way, so the door
+          blooms into the film beneath rather than simply dissolving. */}
+      <DoorBloom film={bloom} openness={live} playing={stage !== "sealed"} />
+
       {/* The whole door is the control. Nobody should have to discover that
           a decoration was secretly the way in. */}
       <button
@@ -144,6 +149,82 @@ export function EntryGate() {
       >
         {content.door.prompt}
       </p>
+    </div>
+  );
+}
+
+/**
+ * The bloom over the door.
+ *
+ * Cream petals opening toward the lens, brought up as the seal breaks so the
+ * envelope is carried into the film rather than cut to it. Its opacity is
+ * written straight to the element from the door's own live position — putting
+ * a sixty-times-a-second fade through React state would re-render the whole
+ * gate, envelope and all, for the sake of one number.
+ *
+ * Renders nothing when the film has not been dropped into /public/ambient,
+ * which is the situation until someone does. The door then clears exactly as
+ * it always has.
+ */
+function DoorBloom({
+  film,
+  openness,
+  playing,
+}: {
+  film: FilmSources | null;
+  openness: { current: number };
+  playing: boolean;
+}) {
+  const layer = useRef<HTMLDivElement>(null);
+  const video = useRef<HTMLVideoElement>(null);
+  const [cut, setCut] = useState<FilmSources["desktop"] | null>(null);
+
+  useEffect(() => {
+    if (!film) return;
+    setCut(window.matchMedia("(min-width: 768px)").matches ? film.desktop : film.mobile);
+  }, [film]);
+
+  useEffect(() => {
+    if (!playing || !cut) return;
+    video.current?.play().catch(() => {});
+
+    let frame = 0;
+    const tick = () => {
+      const el = layer.current;
+      if (el) {
+        // Nothing until the wax has actually broken, then all the way up.
+        const t = Math.min(1, Math.max(0, (openness.current - 0.34) / 0.5));
+        el.style.opacity = String(t * content.ambient.bloom.opacity);
+        el.style.transform = `scale(${(1.18 - t * 0.14).toFixed(3)})`;
+      }
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [playing, cut, openness]);
+
+  if (!film || !cut) return null;
+
+  return (
+    <div
+      ref={layer}
+      className="pointer-events-none absolute inset-0 overflow-hidden"
+      style={{ opacity: 0, transform: "scale(1.18)", mixBlendMode: "screen" }}
+      aria-hidden="true"
+      data-no-print
+    >
+      <video
+        ref={video}
+        muted
+        playsInline
+        loop
+        preload="auto"
+        poster={cut.poster}
+        className="h-full w-full object-cover"
+      >
+        {cut.webm && <source src={cut.webm} type="video/webm" />}
+        {cut.mp4 && <source src={cut.mp4} type="video/mp4" />}
+      </video>
     </div>
   );
 }

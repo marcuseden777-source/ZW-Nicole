@@ -1,11 +1,27 @@
+"use client";
+
 import Image from "next/image";
+import { useState } from "react";
+
+import { Lightbox } from "@/components/ui/Lightbox";
 import { Divider } from "@/components/ui/Ornaments";
+import type { Photo } from "@/lib/media";
 import * as content from "@/content/wedding";
 
 /* The site's second life: what replaces the RSVP once the day has passed. */
 
-/** The photographs, laid out as a gallery wall rather than a grid of squares. */
-export function Gallery() {
+/**
+ * The photographs, laid out as a gallery wall rather than a grid of squares.
+ *
+ * Columns rather than a grid, because a grid of equal cells can only hold
+ * mixed portrait and landscape pictures by cropping them, and these are the
+ * only photographs of this day that will ever exist. Every one is shown at
+ * its own shape, whole. The wall finds its own rhythm from that, the way a
+ * printed album does.
+ */
+export function Gallery({ photos }: { photos: Photo[] }) {
+  const [open, setOpen] = useState<number | null>(null);
+
   return (
     <section
       aria-labelledby="gallery-heading"
@@ -19,7 +35,7 @@ export function Gallery() {
           <Divider className="mx-auto mt-5" />
         </header>
 
-        {content.gallery.length === 0 ? (
+        {photos.length === 0 ? (
           // An empty gallery should still look considered, never broken.
           <div
             className="u-reveal mx-auto mt-12 max-w-md rounded-t-[6rem] border px-8 pb-10 pt-14 text-center"
@@ -30,31 +46,47 @@ export function Gallery() {
             </p>
           </div>
         ) : (
-          <div className="mt-[clamp(2.5rem,7vh,4rem)] grid auto-rows-[minmax(0,14rem)] grid-cols-2 gap-3 sm:auto-rows-[minmax(0,17rem)] sm:grid-cols-3 sm:gap-4">
-            {content.gallery.map((photo, i) => (
-              <figure
-                key={photo.src}
-                className={`u-reveal relative overflow-hidden bg-parchment ${
-                  photo.span === "wide"
-                    ? "col-span-2 row-span-1"
-                    : photo.span === "tall"
-                      ? "row-span-2"
-                      : ""
-                }`}
-                style={{ "--reveal-delay": `${(i % 6) * 90}ms` } as React.CSSProperties}
-              >
-                <Image
-                  src={photo.src}
-                  alt={photo.alt}
-                  fill
-                  // Two across on a phone, three on a laptop — so no phone ever
-                  // downloads a photograph wider than its own screen.
-                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 380px"
-                  className="object-cover transition-transform duration-[1.2s] ease-[cubic-bezier(0.22,1,0.36,1)] hover:scale-[1.04]"
-                />
-              </figure>
-            ))}
-          </div>
+          <ul className="mt-[clamp(2.5rem,7vh,4rem)] columns-2 gap-3 sm:columns-3 sm:gap-4">
+            {photos.map((photo, i) => {
+              const described = photo.alt || `Photograph ${i + 1} of ${photos.length}`;
+              return (
+                <li
+                  key={photo.src}
+                  className="u-reveal mb-3 break-inside-avoid sm:mb-4"
+                  style={{ "--reveal-delay": `${(i % 6) * 90}ms` } as React.CSSProperties}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setOpen(i)}
+                    className="group relative block w-full overflow-hidden rounded-sm border bg-parchment"
+                    style={{ borderColor: "var(--rule)" }}
+                  >
+                    <Image
+                      src={photo.src}
+                      alt={described}
+                      width={photo.width}
+                      height={photo.height}
+                      // Two across on a phone, three on a laptop — so no phone
+                      // ever downloads a photograph wider than its own screen.
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 380px"
+                      placeholder={photo.blurDataURL ? "blur" : "empty"}
+                      blurDataURL={photo.blurDataURL}
+                      className="h-auto w-full transition-transform duration-[1.2s] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.04]"
+                    />
+                    {photo.alt && (
+                      <span
+                        className="u-eyebrow pointer-events-none absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-[rgba(26,20,13,0.82)] to-transparent px-4 pb-3 pt-8 text-left text-champagne opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100"
+                        aria-hidden="true"
+                      >
+                        {photo.alt}
+                      </span>
+                    )}
+                    <span className="sr-only">Open {described} full size</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
         )}
 
         {content.filmUrl && (
@@ -72,6 +104,8 @@ export function Gallery() {
           </div>
         )}
       </div>
+
+      <Lightbox photos={photos} index={open} onClose={() => setOpen(null)} onIndex={setOpen} />
     </section>
   );
 }

@@ -255,3 +255,13 @@ html.js .u-reveal[data-shown="true"] {
     background: #fff;
   }
 }
+
+/* An overlay makes the rest of the page inert. The menu button is fixed to
+   the corner, so left visible it would sit on top of a full-screen
+   photograph and next to the close button that replaced it. Inert is about
+   behaviour; this is the matching appearance. */
+[data-outside-overlay][inert] {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 320ms var(--ease-silk);
+}

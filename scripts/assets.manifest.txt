@@ -1,0 +1,51 @@
+# Generated films and stills for the invitation.
+#
+# One line per file:   <url> <kind> <name>
+#   kind — film or still
+#   name — the slot the site expects; do not rename these
+#
+# Run `bash scripts/fetch-assets.sh` from a machine with ordinary internet
+# access. It downloads each file, encodes it into the two codecs browsers
+# actually need, cuts a poster frame, and puts everything where the site
+# already looks for it.
+#
+# If a link has expired, open your Higgsfield library, copy the fresh URL for
+# that generation, and replace the line. The generation IDs are in the
+# comments so each one is easy to find again.
+
+# ── ambient.bloom — cream petals drifting through gold light ──────────────
+# 16:9 · 1280×720 · eb9f8709-fa53-424c-b554-5d17717496bb
+https://d8j0ntlcm91z4.cloudfront.net/user_3COfAVD28AMzgJYfHCpLPkMPYvY/hf_20260911_073542_eb9f8709-fa53-424c-b554-5d17717496bb.mp4 film bloom-desktop
+# 9:16 · 720×1280 · d4b95640-79de-4ba2-82c5-3c0930e329c6
+https://d8j0ntlcm91z4.cloudfront.net/user_3COfAVD28AMzgJYfHCpLPkMPYvY/hf_20260911_132537_d4b95640-79de-4ba2-82c5-3c0930e329c6.mp4 film bloom-mobile
+
+# ── ambient.silk — ivory silk rippling under candlelight ──────────────────
+# 16:9 · 1280×720 · 72138203-5531-4d41-9700-408fda3e4432
+https://d8j0ntlcm91z4.cloudfront.net/user_3COfAVD28AMzgJYfHCpLPkMPYvY/hf_20260911_073122_72138203-5531-4d41-9700-408fda3e4432.mp4 film silk-desktop
+# 9:16 · 720×1280 · fad69d47-b61b-4be0-9dcf-83facdd555cb
+https://d8j0ntlcm91z4.cloudfront.net/user_3COfAVD28AMzgJYfHCpLPkMPYvY/hf_20260911_073542_fad69d47-b61b-4be0-9dcf-83facdd555cb.mp4 film silk-mobile
+
+# ── ambient.letter — the sealed envelope on linen, candlelight ────────────
+# 9:16 · 720×1280 · 4943aa6c-7871-4b0e-ac7f-e96a76c6b2fb
+https://d8j0ntlcm91z4.cloudfront.net/user_3COfAVD28AMzgJYfHCpLPkMPYvY/hf_20260911_073122_4943aa6c-7871-4b0e-ac7f-e96a76c6b2fb.mp4 film letter-mobile
+# 16:9 · 1280×720 · 91396c9d-1085-4490-88ce-5950e9a1f2d7
+https://d8j0ntlcm91z4.cloudfront.net/user_3COfAVD28AMzgJYfHCpLPkMPYvY/hf_20260911_132537_91396c9d-1085-4490-88ce-5950e9a1f2d7.mp4 film letter-desktop
+
+# ── Stills ────────────────────────────────────────────────────────────────
+# These are botanical and material — a wax macro, a rose, candlelight, pressed
+# flowers. None of them shows Zhi Wei or Nicole, deliberately: invented
+# photographs of a real couple have no business standing in for their wedding.
+# They are section accents, not gallery contents.
+#
+# All four were generated at "low" quality / 1k. They are good enough as
+# accents behind a scrim; regenerate them at high quality if you ever want one
+# large on screen.
+
+# f03f7827-20ca-42b2-8616-5ceb2d107b87 · 2:3 · oxblood wax seal, macro
+https://d8j0ntlcm91z4.cloudfront.net/user_3COfAVD28AMzgJYfHCpLPkMPYvY/hf_20260911_073146_f03f7827-20ca-42b2-8616-5ceb2d107b87.png still seal
+# 9b5f8fed-f01b-459a-883f-9464a3b8d031 · 2:3 · a single cream garden rose
+https://d8j0ntlcm91z4.cloudfront.net/user_3COfAVD28AMzgJYfHCpLPkMPYvY/hf_20260911_073146_9b5f8fed-f01b-459a-883f-9464a3b8d031.png still rose
+# a34963c9-1afd-4dad-90d0-96f3d94291ec · 3:2 · candlelight bokeh through chiffon
+https://d8j0ntlcm91z4.cloudfront.net/user_3COfAVD28AMzgJYfHCpLPkMPYvY/hf_20260911_073146_a34963c9-1afd-4dad-90d0-96f3d94291ec.png still bokeh
+# c270af0d-d47d-4005-91eb-aa1d8f6f86c0 · 3:2 · pressed roses and eucalyptus, flat lay
+https://d8j0ntlcm91z4.cloudfront.net/user_3COfAVD28AMzgJYfHCpLPkMPYvY/hf_20260911_073146_c270af0d-d47d-4005-91eb-aa1d8f6f86c0.png still pressed

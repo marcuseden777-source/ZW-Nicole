@@ -17,6 +17,7 @@ import { Venue } from "@/components/sections/Venue";
 import { Welcome } from "@/components/sections/Welcome";
 import * as content from "@/content/wedding";
 import type { Phase } from "@/content/wedding";
+import { readAmbient, readGallery } from "@/lib/media";
 
 /**
  * Which life the site is living. The hosting dashboard can override the
@@ -28,8 +29,15 @@ function resolvePhase(): Phase {
   return override === "invitation" || override === "keepsake" ? override : content.phase;
 }
 
-export default function Page() {
+export default async function Page() {
   const phase = resolvePhase();
+
+  // The photographs and the films are read from /public at build time rather
+  // than listed by hand. Drop files into the folders and they appear; leave
+  // the folders empty and every section that uses them shows its considered
+  // empty state instead. Nobody has to edit TypeScript to add a picture.
+  const photos = await readGallery();
+  const films = readAmbient();
 
   return (
     <>
@@ -37,7 +45,7 @@ export default function Page() {
           already complete in the HTML — so a crawler, a link-preview bot and
           a guest without JavaScript get the invitation and never meet a gate. */}
       <GateBoundary>
-        <EntryGate />
+        <EntryGate bloom={films.bloom ?? null} />
       </GateBoundary>
 
       <SmoothScroll />
@@ -81,8 +89,8 @@ export default function Page() {
 
         {phase === "invitation" && <Countdown />}
 
-        <Story />
-        <Carousel />
+        <Story film={films.silk ?? null} />
+        <Carousel photos={photos} />
 
         {phase === "invitation" ? (
           <>
@@ -93,7 +101,7 @@ export default function Page() {
           </>
         ) : (
           <>
-            <Gallery />
+            <Gallery photos={photos} />
             <Guestbook />
             <Timeline />
             <Venue />
@@ -101,7 +109,7 @@ export default function Page() {
         )}
         </main>
 
-        <Closing phase={phase} />
+        <Closing phase={phase} film={films.letter ?? null} />
       </div>
 
       <StructuredData />

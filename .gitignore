@@ -9,3 +9,7 @@ build/
 .vercel
 *.tsbuildinfo
 next-env.d.ts
+
+# Originals downloaded by scripts/fetch-assets.sh. The encoded versions in
+# public/ are what the site serves and what belongs in the repository.
+scripts/.assets-raw/

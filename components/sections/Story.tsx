@@ -8,6 +8,7 @@ import { Divider, SealMark } from "@/components/ui/Ornaments";
 import { useCapability } from "@/lib/useCapability";
 import { useSectionProgress } from "@/lib/useSectionProgress";
 import * as content from "@/content/wedding";
+import type { FilmSources } from "@/lib/media";
 
 const ParchmentScroll = dynamic(
   () => import("@/components/three/ParchmentScroll").then((m) => m.ParchmentScroll),
@@ -26,7 +27,7 @@ const ParchmentScroll = dynamic(
  * container, so a two-hundred-word reveal costs a single style write per
  * frame instead of two hundred React renders.
  */
-export function Story() {
+export function Story({ film }: { film: FilmSources | null }) {
   const { ref, progress } = useSectionProgress<HTMLDivElement>();
   const capability = useCapability();
   const prose = useRef<HTMLDivElement>(null);
@@ -55,12 +56,7 @@ export function Story() {
       aria-labelledby="story-heading"
       className="relative z-[1] overflow-hidden px-[var(--gutter)] py-[clamp(3rem,10vh,7rem)]"
     >
-      <AmbientFilm
-        enabled={content.ambient.story.enabled}
-        opacity={content.ambient.story.opacity}
-        desktop={content.ambient.story.desktop}
-        mobile={content.ambient.story.mobile}
-      />
+      <AmbientFilm film={film} opacity={content.ambient.story.opacity} />
 
       <div ref={ref} className="relative mx-auto max-w-2xl">
         {/* The paper. Sits behind the words and never competes with them. */}

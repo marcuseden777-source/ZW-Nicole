@@ -89,6 +89,8 @@ export function Nav({ destinations }: { destinations: Destination[] }) {
         className="fixed right-[clamp(1rem,3vw,2rem)] top-[clamp(1rem,3vw,2rem)] z-40 flex h-12 w-12 items-center justify-center rounded-full border bg-ivory/85 backdrop-blur-sm transition-transform duration-500 hover:scale-105"
         style={{ borderColor: "var(--rule)" }}
         data-no-print
+        // Lives outside #site-root, so an overlay has to silence it by name.
+        data-outside-overlay
       >
         <span className="sr-only">Open the menu</span>
         <span aria-hidden="true" className="flex flex-col gap-[5px]">
@@ -104,6 +106,7 @@ export function Nav({ destinations }: { destinations: Destination[] }) {
         aria-modal={open ? true : undefined}
         aria-label="Menu"
         data-menu
+        data-outside-overlay
         ref={panel}
         className="fixed inset-0 z-50 flex flex-col justify-center px-[var(--gutter)]"
         style={{

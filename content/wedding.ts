@@ -327,36 +327,27 @@ export const heroFilm = {
  *  Optional films that sit quietly behind sections, and the floral bloom that
  *  can cover the moment the door opens.
  *
- *  Every one is OFF until its file exists. A slot that is off costs the guest
- *  nothing — no request, no broken frame, the section simply looks as it does
- *  now. Drop the files into /public/ambient and flip `enabled` to true.
+ *  There is no switch to flip. A slot is on when its files are in
+ *  /public/ambient and off when they are not — the site looks in the folder
+ *  at build time and works it out. A slot that is off costs the guest
+ *  nothing: no request, no broken frame, the section simply looks as it does
+ *  now.
  *
- *  See ASSETS.md for exactly which file belongs in which slot.
+ *  The only thing to set here is how strongly each film shows through.
+ *
+ *  Run `bash scripts/fetch-assets.sh` to bring the films in, or see
+ *  ASSETS.md for which file belongs in which slot.
  * ─────────────────────────────────────────────────────────────────────────── */
 export const ambient = {
   // Plays over the door as it opens, so the letter blooms into the film
   // rather than simply dissolving.
-  bloom: {
-    enabled: false,
-    desktop: { webm: "/ambient/bloom-desktop.webm", mp4: "/ambient/bloom-desktop.mp4" },
-    mobile: { webm: "/ambient/bloom-mobile.webm", mp4: "/ambient/bloom-mobile.mp4" },
-  },
+  bloom: { opacity: 0.85 },
 
   // Behind their story.
-  story: {
-    enabled: false,
-    opacity: 0.2,
-    desktop: { webm: "/ambient/silk-desktop.webm", mp4: "/ambient/silk-desktop.mp4" },
-    mobile: { webm: "/ambient/silk-mobile.webm", mp4: "/ambient/silk-mobile.mp4" },
-  },
+  story: { opacity: 0.2 },
 
   // Behind the closing words.
-  closing: {
-    enabled: false,
-    opacity: 0.18,
-    desktop: { webm: "/ambient/letter-desktop.webm", mp4: "/ambient/letter-desktop.mp4" },
-    mobile: { webm: "/ambient/letter-mobile.webm", mp4: "/ambient/letter-mobile.mp4" },
-  },
+  closing: { opacity: 0.18 },
 };
 
 /* ───────────────────────────────────────────────────────────────────────────

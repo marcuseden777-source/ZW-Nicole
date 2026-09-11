@@ -1,74 +1,264 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { Lightbox } from "@/components/ui/Lightbox";
 import { Divider } from "@/components/ui/Ornaments";
-import { useCapability } from "@/lib/useCapability";
-import { useSectionProgress } from "@/lib/useSectionProgress";
-import * as content from "@/content/wedding";
+import type { Photo } from "@/lib/media";
 
 /**
- * A carousel of photographs, carried round by the scroll.
+ * The reel of photographs.
  *
- * Real perspective, but built from CSS 3D rather than WebGL on purpose: these
- * are pictures people want to open, and in a canvas a photograph is not a
- * link, cannot be tabbed to, cannot be described to a screen reader and cannot
- * be saved. Here each one is a genuine <button> wrapping a genuine <Image>,
- * arranged on a ring that turns as the section is read.
+ * Built from CSS 3D rather than WebGL on purpose. These are pictures people
+ * want to open, and inside a canvas a photograph is not a link: it cannot be
+ * tabbed to, cannot be described to a screen reader, cannot be saved and does
+ * not exist for a crawler. Here each one is a real <button> around a real
+ * <Image>, arranged on a shallow arc that the page scroll turns.
+ *
+ * The one decision everything else follows from: EVERY CARD IS THE SAME
+ * HEIGHT AND ITS OWN WIDTH. A wedding set is portrait and landscape mixed
+ * together — the ceremony shot upright, the long table wide — and a carousel
+ * of identical frames has to crop most of them to fit. Cropping a wedding
+ * photograph is not a layout decision, it is throwing away the bit the
+ * photographer chose. So the frames vary instead, which is also what a
+ * contact sheet looks like, and nothing is ever cut.
+ *
+ * Without JavaScript, and for anyone who asked for reduced motion, this is a
+ * plain horizontal strip that scrolls and snaps. That version is not a
+ * degraded fallback bolted on afterwards; it is what the markup actually is,
+ * and the arc is layered on top of it.
  */
-export function Carousel() {
-  const { ref, progress } = useSectionProgress<HTMLDivElement>();
-  const capability = useCapability();
-  const [open, setOpen] = useState<number | null>(null);
-  const [manual, setManual] = useState<number | null>(null);
-  const stage = useRef<HTMLDivElement>(null);
-  const closeButton = useRef<HTMLButtonElement>(null);
 
-  const photos = content.gallery;
+/**
+ * The widest and narrowest a card may be, as a multiple of its height.
+ *
+ * Every shape a camera actually produces sits inside this — 2:3 is 0.67, 3:2
+ * is 1.5, 4:3 is 1.33, 16:9 is 1.78 — so in practice nothing is cropped. The
+ * clamp exists for the stitched panorama and the extreme crop, which would
+ * otherwise be wider than the screen or thinner than a finger. Those two are
+ * eased in at the edges, and the lightbox still shows them whole.
+ */
+const WIDEST = 1.9;
+const NARROWEST = 0.55;
+
+/** How far from the centre a card still earns a transform. */
+const WINDOW = 5;
+
+/**
+ * The space between cards, as a fraction of their shared height.
+ *
+ * This number appears twice — once in the arithmetic that decides where each
+ * card sits along the reel, and once as the gap the browser actually lays
+ * out. They have to be the same number or the two disagree a little at every
+ * card and the reel walks out of centre as you go along it.
+ */
+const GAP = 0.08;
+
+export function Carousel({ photos }: { photos: Photo[] }) {
   const count = photos.length;
 
-  // Scroll carries the ring round; tapping a face takes over until the guest
-  // scrolls again, so the two never fight.
-  const turned = manual ?? (capability.reducedMotion ? 0 : progress * (count - 1));
+  const stage = useRef<HTMLDivElement>(null);
+  const track = useRef<HTMLUListElement>(null);
+  const cards = useRef<(HTMLLIElement | null)[]>([]);
 
-  useEffect(() => {
-    if (manual === null) return;
-    const clear = () => setManual(null);
-    window.addEventListener("wheel", clear, { passive: true, once: true });
-    window.addEventListener("touchmove", clear, { passive: true, once: true });
-    return () => {
-      window.removeEventListener("wheel", clear);
-      window.removeEventListener("touchmove", clear);
-    };
-  }, [manual]);
+  /** Live position along the reel, in cards. Read every frame, never rendered. */
+  const position = useRef(0);
+  /** Set while the guest is steering, which suspends the scroll coupling. */
+  const held = useRef<number | null>(null);
 
-  // The lightbox: escape closes, arrows move, focus comes back where it left.
-  useEffect(() => {
-    if (open === null) return;
-    closeButton.current?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(null);
-      if (e.key === "ArrowRight") setOpen((i) => (i === null ? null : (i + 1) % count));
-      if (e.key === "ArrowLeft") setOpen((i) => (i === null ? null : (i - 1 + count) % count));
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, count]);
+  const [open, setOpen] = useState<number | null>(null);
+  const [centred, setCentred] = useState(0);
+  const [enhanced, setEnhanced] = useState(false);
 
-  const step = useCallback(
-    (dir: number) => setManual((m) => (m ?? turned) + dir),
-    [turned],
+  /* Each card's width as a multiple of the shared height. Clamped at both
+     ends: an extreme panorama should not push everything else off the screen,
+     and a very tall crop should not become a sliver. */
+  const ratios = useMemo(
+    () =>
+      photos.map((p) => {
+        const raw = p.width / p.height;
+        return Math.min(WIDEST, Math.max(NARROWEST, raw));
+      }),
+    [photos],
   );
 
-  if (!count) {
+  /* Where the middle of each card sits along the reel, measured in heights.
+     Built once, because it depends only on the pictures. */
+  const centres = useMemo(() => {
+    const out: number[] = [];
+    let x = 0;
+    for (const r of ratios) {
+      out.push(x + r / 2);
+      x += r + GAP;
+    }
+    return out;
+  }, [ratios]);
+
+  const centreAt = useCallback(
+    (p: number) => {
+      if (centres.length === 0) return 0;
+      const clamped = Math.min(centres.length - 1, Math.max(0, p));
+      const i = Math.floor(clamped);
+      const j = Math.min(centres.length - 1, i + 1);
+      return centres[i] + (centres[j] - centres[i]) * (clamped - i);
+    },
+    [centres],
+  );
+
+  /* Only enhance once the browser has been measured and has said it wants
+     motion. Before that the plain strip is what is on screen, and it is
+     already correct. */
+  useEffect(() => {
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const apply = () => setEnhanced(!motion.matches);
+    apply();
+    motion.addEventListener("change", apply);
+    return () => motion.removeEventListener("change", apply);
+  }, []);
+
+  /* The loop. One place, one frame, writing straight to the DOM — the reel
+     moves continuously with the scroll and React is not involved in it. */
+  useEffect(() => {
+    if (!enhanced || count === 0) return;
+
+    let frame = 0;
+    let announced = -1;
+
+    const tick = () => {
+      const stageEl = stage.current;
+      const trackEl = track.current;
+      if (!stageEl || !trackEl) {
+        frame = requestAnimationFrame(tick);
+        return;
+      }
+
+      const box = stageEl.getBoundingClientRect();
+      const height = box.height;
+
+      if (held.current !== null) {
+        position.current = held.current;
+      } else if (height > 0) {
+        // How far the section has travelled past the centre line of the
+        // screen, 0 to 1 — the same measure the rest of the page uses, so the
+        // reel turns in step with everything else.
+        const travelled = (window.innerHeight / 2 - box.top) / (box.height + window.innerHeight * 0.6);
+        const eased = Math.min(1, Math.max(0, travelled));
+        position.current += (eased * (count - 1) - position.current) * 0.12;
+      }
+
+      // The laid-out gap, in the same units the browser uses. A percentage
+      // gap would resolve against the track's width, not the card height the
+      // rest of this geometry is measured in.
+      const gap = `${(height * GAP).toFixed(2)}px`;
+      if (trackEl.style.gap !== gap) trackEl.style.gap = gap;
+
+      const p = position.current;
+      trackEl.style.transform = `translate3d(${(box.width / 2 - centreAt(p) * height).toFixed(2)}px, 0, 0)`;
+
+      for (let i = 0; i < count; i++) {
+        const el = cards.current[i];
+        if (!el) continue;
+        const d = i - p;
+        const away = Math.abs(d);
+
+        if (away > WINDOW) {
+          // Far enough away to be nobody's business. Not painted, not read.
+          if (el.style.visibility !== "hidden") {
+            el.style.visibility = "hidden";
+            el.setAttribute("aria-hidden", "true");
+          }
+          continue;
+        }
+        if (el.style.visibility === "hidden") {
+          el.style.visibility = "";
+          el.removeAttribute("aria-hidden");
+        }
+
+        const turn = Math.max(-34, Math.min(34, d * -17));
+        const depth = -Math.min(away, WINDOW) * 3.2;
+        // The one in front lifts and comes forward, so it reads as the
+        // photograph being looked at rather than merely the middle one.
+        const front = Math.max(0, 1 - away);
+        const lift = front * -1.5;
+        const scale = 1 + front * 0.06;
+
+        el.style.transform = `translate3d(0, ${lift.toFixed(2)}rem, ${depth.toFixed(2)}rem) rotateY(${turn.toFixed(2)}deg) scale(${scale.toFixed(3)})`;
+        el.style.opacity = String(Math.max(0.22, 1 - away * 0.24));
+        el.style.zIndex = String(100 - Math.round(away * 10));
+      }
+
+      // Tell React only when the photograph in front actually changes —
+      // roughly once a second while scrolling, rather than sixty times.
+      const now = Math.max(0, Math.min(count - 1, Math.round(p)));
+      if (now !== announced) {
+        announced = now;
+        setCentred(now);
+      }
+
+      frame = requestAnimationFrame(tick);
+    };
+
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [enhanced, count, centreAt]);
+
+  /* Steering by hand. A drag scrubs the reel; letting go settles it on the
+     nearest photograph and hands control back to the scroll. */
+  const drag = useRef<{ x: number; from: number } | null>(null);
+
+  const onPointerDown = (event: React.PointerEvent) => {
+    if (!enhanced || count < 2) return;
+    // Let a real click on the centred photograph through.
+    if ((event.target as HTMLElement).closest("[data-open-photo]")) return;
+    drag.current = { x: event.clientX, from: position.current };
+    held.current = position.current;
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+  };
+
+  const onPointerMove = (event: React.PointerEvent) => {
+    if (!drag.current) return;
+    const height = stage.current?.getBoundingClientRect().height ?? 1;
+    // Divide by the height because the reel is measured in heights.
+    const moved = (event.clientX - drag.current.x) / (height * 0.85);
+    held.current = Math.max(0, Math.min(count - 1, drag.current.from - moved));
+  };
+
+  const endDrag = () => {
+    if (!drag.current) return;
+    drag.current = null;
+    held.current = held.current === null ? null : Math.round(held.current);
+    // Hold the settled position briefly, then let the scroll take over again.
+    window.setTimeout(() => {
+      held.current = null;
+    }, 1400);
+  };
+
+  const step = useCallback(
+    (delta: number) => {
+      const next = Math.max(0, Math.min(count - 1, Math.round(position.current) + delta));
+      held.current = next;
+      position.current = next;
+      setCentred(next);
+      window.setTimeout(() => {
+        held.current = null;
+      }, 2200);
+    },
+    [count],
+  );
+
+  /* ── Nothing to show yet ────────────────────────────────────────────── */
+  if (count === 0) {
     return (
       <section
         aria-labelledby="carousel-heading"
         className="relative z-[1] px-[var(--gutter)] py-[clamp(3rem,10vh,7rem)]"
       >
         <div className="mx-auto max-w-2xl text-center">
-          <h2 id="carousel-heading" className="u-reveal u-script text-[clamp(2.5rem,9vw,4rem)] text-gold-deep">
+          <h2
+            id="carousel-heading"
+            className="u-reveal u-script text-[clamp(2.5rem,9vw,4rem)] text-gold-deep"
+          >
             Moments
           </h2>
           <Divider className="mx-auto mt-5" />
@@ -85,137 +275,197 @@ export function Carousel() {
     );
   }
 
-
   return (
     <section
       aria-labelledby="carousel-heading"
       className="relative z-[1] overflow-hidden px-[var(--gutter)] py-[clamp(3rem,10vh,7rem)]"
     >
-      <div ref={ref} className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-6xl">
         <header className="text-center">
-          <h2 id="carousel-heading" className="u-reveal u-script text-[clamp(2.5rem,9vw,4rem)] text-gold-deep">
+          <h2
+            id="carousel-heading"
+            className="u-reveal u-script text-[clamp(2.5rem,9vw,4rem)] text-gold-deep"
+          >
             Moments
           </h2>
           <Divider className="mx-auto mt-5" />
         </header>
 
         <div
-          ref={stage}
-          className="relative mt-[clamp(2.5rem,7vh,4rem)] h-[clamp(17rem,42vw,25rem)]"
-          style={{ perspective: "1400px", perspectiveOrigin: "50% 45%" }}
+          role="group"
+          aria-roledescription="carousel"
+          aria-label="Photographs"
+          className="relative mt-[clamp(2.5rem,7vh,4rem)]"
         >
-          <ul
-            className="absolute inset-0"
-            style={{ transformStyle: "preserve-3d", pointerEvents: "none" }}
+          <div
+            ref={stage}
+            // Full-bleed: out of the text column and across the whole screen.
+            // The section above clips, so the extra width can never become a
+            // horizontal scrollbar.
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={endDrag}
+            onPointerCancel={endDrag}
+            className={
+              enhanced
+                ? "relative left-1/2 h-[clamp(15rem,38vw,23rem)] w-screen -translate-x-1/2 touch-pan-y select-none overflow-hidden"
+                : // The honest version: a strip you scroll and that snaps.
+                  "relative h-[clamp(15rem,38vw,23rem)] snap-x snap-mandatory overflow-x-auto"
+            }
+            style={enhanced ? { perspective: "1500px", perspectiveOrigin: "50% 46%" } : undefined}
           >
-            {photos.map((photo, i) => {
-              // Where this face sits relative to the one in front.
-              let offset = i - turned;
-              offset = ((offset % count) + count) % count;
-              if (offset > count / 2) offset -= count;
+            <ul
+              ref={track}
+              className={
+                enhanced
+                  ? "absolute left-0 top-0 flex h-full items-center"
+                  : "flex h-full items-center gap-3"
+              }
+              style={enhanced ? { transformStyle: "preserve-3d", willChange: "transform" } : undefined}
+            >
+              {photos.map((photo, i) => {
+                const ratio = ratios[i];
+                const described = photo.alt || `Photograph ${i + 1} of ${count}`;
+                const isCentre = i === centred;
 
-              // Coverflow rather than a ring: the front photograph stays
-              // centred and its neighbours fan back behind it. A true ring
-              // throws the faces off both edges of the screen and leaves
-              // nothing in the middle to look at.
-              const away = Math.abs(offset);
-              const depth = Math.min(away, 3);
-
-              return (
-                <li
-                  key={photo.src}
-                  className="absolute left-1/2 top-1/2"
-                  style={{
-                    transformStyle: "preserve-3d",
-                    transform: [
-                      "translate(-50%,-50%)",
-                      `translateX(${offset * 58}%)`,
-                      `translateZ(${-depth * 9}rem)`,
-                      `rotateY(${Math.max(-52, Math.min(52, offset * -34))}deg)`,
-                    ].join(" "),
-                    opacity: away > 3.2 ? 0 : Math.max(0.2, 1 - away * 0.28),
-                    zIndex: Math.round(100 - away * 10),
-                    pointerEvents: away < 0.5 ? "auto" : away < 2.6 ? "auto" : "none",
-                    transition: capability.reducedMotion
-                      ? "none"
-                      : "transform 700ms var(--ease-silk), opacity 700ms var(--ease-silk)",
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => (Math.abs(offset) < 0.5 ? setOpen(i) : setManual(i))}
-                    className="block overflow-hidden rounded-sm border bg-parchment shadow-[0_30px_60px_-32px_rgba(90,70,40,0.5)] transition-transform duration-700 hover:scale-[1.03]"
+                return (
+                  <li
+                    key={photo.src}
+                    ref={(el) => {
+                      cards.current[i] = el;
+                    }}
+                    className={enhanced ? "h-full shrink-0" : "h-full shrink-0 snap-center"}
                     style={{
-                      borderColor: "var(--rule)",
-                      width: "clamp(11rem,26vw,16rem)",
+                      // The card is as tall as the reel and as wide as its own
+                      // photograph needs. Deriving the width from aspect-ratio
+                      // rather than setting it is the whole trick: a percentage
+                      // width here would resolve against the track, whose width
+                      // is itself the sum of the cards, and run away.
+                      aspectRatio: String(ratio),
+                      transformStyle: enhanced ? "preserve-3d" : undefined,
+                      transition: enhanced ? "opacity 500ms var(--ease-silk)" : undefined,
                     }}
                   >
-                    <span className="relative block aspect-[3/4]">
+                    <button
+                      type="button"
+                      data-open-photo
+                      // Only the photograph in front takes a tab stop. The
+                      // others are reached with the buttons underneath, which
+                      // is how a carousel is supposed to work.
+                      tabIndex={enhanced && !isCentre ? -1 : 0}
+                      onClick={() => (enhanced && !isCentre ? step(i - centred) : setOpen(i))}
+                      className="group relative block h-full w-full overflow-hidden rounded-sm border bg-parchment shadow-[0_34px_70px_-38px_rgba(74,56,30,0.62)]"
+                      style={{ borderColor: "var(--rule)" }}
+                    >
                       <Image
                         src={photo.src}
-                        alt={photo.alt}
+                        alt={described}
                         fill
-                        sizes="(max-width: 640px) 60vw, 20rem"
-                        className="object-cover"
+                        // Roughly the card's share of the screen. No phone
+                        // downloads a picture wider than its own display.
+                        sizes="(max-width: 640px) 70vw, (max-width: 1024px) 40vw, 30rem"
+                        placeholder={photo.blurDataURL ? "blur" : "empty"}
+                        blurDataURL={photo.blurDataURL}
+                        // The first few are what a guest sees immediately.
+                        loading={i < 3 ? "eager" : "lazy"}
+                        className="object-cover transition-transform duration-[1.4s] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.04]"
                       />
-                    </span>
-                    <span className="sr-only">
-                      {Math.abs(offset) < 0.5 ? "Open this photograph" : "Bring this photograph to the front"}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
+                      <span className="sr-only">
+                        {enhanced && !isCentre
+                          ? `Bring ${described} to the front`
+                          : `Open ${described} full size`}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
 
-        {/* Real controls, so this works without a mouse and without scrolling. */}
-        <div className="relative z-[200] mt-10 flex items-center justify-center gap-4" data-no-print>
-          {([["Previous", -1], ["Next", 1]] as const).map(([label, dir]) => (
-            <button
-              key={label}
-              type="button"
-              onClick={() => step(dir)}
-              className="u-eyebrow flex h-12 items-center rounded-full border px-6 text-ink transition-colors duration-500 hover:bg-gold-ink hover:text-white"
-              style={{ borderColor: "var(--rule)" }}
-            >
-              {label}
-            </button>
-          ))}
+            {/* The reel runs past both edges of the screen. Fading it out
+                there is what a hard clipped edge is pretending to be — and
+                unlike a mask on the stage it cannot flatten the 3D the cards
+                sit in. */}
+            {enhanced && (
+              <>
+                <Edge side="left" />
+                <Edge side="right" />
+              </>
+            )}
+          </div>
+
+          {/* Real controls. This has to work with a keyboard, with a thumb,
+              and for anyone who never scrolls far enough to turn the reel. */}
+          {count > 1 && (
+            <div className="mt-9 flex items-center justify-center gap-4" data-no-print>
+              <Control label="Previous photograph" onClick={() => step(-1)} disabled={centred === 0} dir="left" />
+              <p className="u-eyebrow min-w-[6.5rem] text-center text-ink-soft" aria-hidden="true">
+                {centred + 1} / {count}
+              </p>
+              <Control
+                label="Next photograph"
+                onClick={() => step(1)}
+                disabled={centred === count - 1}
+                dir="right"
+              />
+            </div>
+          )}
+
+          {/* Said out loud, politely, when the photograph in front changes. */}
+          <p className="sr-only" aria-live="polite" aria-atomic="true">
+            {photos[centred]?.alt || `Photograph ${centred + 1}`}, {centred + 1} of {count}
+          </p>
         </div>
       </div>
 
-      {open !== null && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={photos[open].alt}
-          className="fixed inset-0 z-50 flex items-center justify-center p-[var(--gutter)]"
-          style={{ background: "rgba(28,22,14,0.92)" }}
-          onClick={() => setOpen(null)}
-        >
-          <button
-            ref={closeButton}
-            type="button"
-            onClick={() => setOpen(null)}
-            className="absolute right-[clamp(1rem,3vw,2rem)] top-[clamp(1rem,3vw,2rem)] flex h-12 w-12 items-center justify-center rounded-full border border-champagne/40"
-          >
-            <span className="sr-only">Close</span>
-            <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-              <path d="M6 6 L18 18 M18 6 L6 18" stroke="var(--color-champagne)" strokeWidth="1.2" strokeLinecap="round" fill="none" />
-            </svg>
-          </button>
-
-          <figure className="relative max-h-full w-full max-w-4xl" onClick={(e) => e.stopPropagation()}>
-            <div className="relative aspect-[3/2] w-full">
-              <Image src={photos[open].src} alt={photos[open].alt} fill sizes="100vw" className="object-contain" />
-            </div>
-            <figcaption className="u-eyebrow mt-5 text-center" style={{ color: "var(--color-champagne)" }}>
-              {photos[open].alt} · {open + 1} of {count}
-            </figcaption>
-          </figure>
-        </div>
-      )}
+      <Lightbox photos={photos} index={open} onClose={() => setOpen(null)} onIndex={setOpen} />
     </section>
+  );
+}
+
+/** A soft ivory fade at one end of the reel. */
+function Edge({ side }: { side: "left" | "right" }) {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-y-0 w-[clamp(3.5rem,14vw,12rem)]"
+      style={{
+        [side]: 0,
+        background: `linear-gradient(to ${side === "left" ? "right" : "left"}, var(--color-ivory), color-mix(in oklab, var(--color-ivory) 70%, transparent) 55%, transparent)`,
+      } as React.CSSProperties}
+    />
+  );
+}
+
+function Control({
+  label,
+  onClick,
+  disabled,
+  dir,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled: boolean;
+  dir: "left" | "right";
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="flex h-12 w-12 items-center justify-center rounded-full border text-ink transition-colors duration-500 hover:bg-gold-ink hover:text-white disabled:cursor-default disabled:opacity-35 disabled:hover:bg-transparent disabled:hover:text-ink"
+      style={{ borderColor: "var(--rule)" }}
+    >
+      <span className="sr-only">{label}</span>
+      <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
+        <path
+          d={dir === "left" ? "M15 5 L8 12 L15 19" : "M9 5 L16 12 L9 19"}
+          stroke="currentColor"
+          strokeWidth="1.3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill="none"
+        />
+      </svg>
+    </button>
   );
 }

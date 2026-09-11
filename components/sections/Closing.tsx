@@ -7,6 +7,7 @@ import { CornerSpray, Divider, SealMark } from "@/components/ui/Ornaments";
 import { useCapability } from "@/lib/useCapability";
 import * as content from "@/content/wedding";
 import type { Phase } from "@/content/wedding";
+import type { FilmSources } from "@/lib/media";
 
 /** The last word, and the seal pressed once more. */
 const SealScene = dynamic(
@@ -14,18 +15,13 @@ const SealScene = dynamic(
   { ssr: false },
 );
 
-export function Closing({ phase }: { phase: Phase }) {
+export function Closing({ phase, film }: { phase: Phase; film: FilmSources | null }) {
   const capability = useCapability();
   const useWebGL = capability.ready && capability.webgl && content.motion.webgl;
 
   return (
     <footer className="relative z-[1] overflow-hidden px-[var(--gutter)] pb-[clamp(3rem,9vh,6rem)] pt-[clamp(3rem,10vh,7rem)]">
-      <AmbientFilm
-        enabled={content.ambient.closing.enabled}
-        opacity={content.ambient.closing.opacity}
-        desktop={content.ambient.closing.desktop}
-        mobile={content.ambient.closing.mobile}
-      />
+      <AmbientFilm film={film} opacity={content.ambient.closing.opacity} />
 
       <CornerSpray className="pointer-events-none absolute left-0 top-0 h-20 w-28 opacity-40 sm:-left-8 sm:h-28 sm:w-40" />
       <CornerSpray flip className="pointer-events-none absolute right-0 top-0 h-20 w-28 opacity-40 sm:-right-8 sm:h-28 sm:w-40" />

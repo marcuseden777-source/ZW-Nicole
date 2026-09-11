@@ -138,8 +138,10 @@ export function useEntryGate({
     if (stage === "entering" || stage === "done") return;
     if (!mounted) return;
 
-    takeScrollLock();
-    return releaseScrollLock;
+    // Held at the very top: the door is the beginning of the invitation, so
+    // opening it must not drop the guest into the middle of the page.
+    takeScrollLock("gate", 0);
+    return () => releaseScrollLock("gate");
   }, [stage, mounted]);
 
   return { stage, progress, live, open, mounted };
