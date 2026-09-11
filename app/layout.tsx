@@ -83,6 +83,26 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="en"
       className={`${cormorant.variable} ${italianno.variable} ${jost.variable}`}
     >
+      <head>
+        {/*
+          Runs before first paint, so there is no flash of revealed content.
+
+          Two jobs. It grants `html.js`, which is what licenses the scroll
+          reveals to start hidden — without it every section stays visible,
+          so a guest with no JavaScript reads a complete invitation.
+
+          And it sets a dead-man's switch: if React has not booted within
+          four seconds (a 404'd chunk, a dropped connection at the venue),
+          the class is dropped and everything becomes visible anyway. The
+          reveal hook clears the timer the moment it runs.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              'document.documentElement.className+=" js";window.__zwReveal=setTimeout(function(){document.documentElement.classList.remove("js")},4000)',
+          }}
+        />
+      </head>
       <body>{children}</body>
     </html>
   );

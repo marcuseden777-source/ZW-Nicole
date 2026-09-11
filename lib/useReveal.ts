@@ -9,6 +9,13 @@ import { useEffect } from "react";
  */
 export function useReveal() {
   useEffect(() => {
+    // React is alive; the boot script's fallback is no longer needed.
+    const timer = (window as Window & { __zwReveal?: number }).__zwReveal;
+    if (timer) {
+      clearTimeout(timer);
+      document.documentElement.classList.add("js");
+    }
+
     const targets = document.querySelectorAll<HTMLElement>(".u-reveal:not([data-shown])");
     if (!targets.length) return;
 

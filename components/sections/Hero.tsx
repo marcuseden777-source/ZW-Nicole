@@ -70,13 +70,19 @@ export function Hero() {
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            <animateTransform
-              attributeName="transform"
-              type="translate"
-              values="0 -3; 0 3; 0 -3"
-              dur="2.4s"
-              repeatCount="indefinite"
-            />
+            {/* SMIL is not CSS: the global `animation-duration: 0.001ms`
+                under prefers-reduced-motion cannot touch it, so this was the
+                one thing on the page that kept moving after being asked to
+                stop. It is now simply not rendered. */}
+            {!capability.reducedMotion && (
+              <animateTransform
+                attributeName="transform"
+                type="translate"
+                values="0 -3; 0 3; 0 -3"
+                dur="2.4s"
+                repeatCount="indefinite"
+              />
+            )}
           </path>
         </svg>
       </div>

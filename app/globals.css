@@ -176,7 +176,11 @@ body::before {
 /* ── Scroll-reveal ───────────────────────────────────────────────
    Elements rise into place once, as the page is read. Handled by
    IntersectionObserver so nothing animates off-screen. */
-.u-reveal {
+/* Scoped to html.js on purpose. The hidden state is something a working
+   script ASKS for, never the default — otherwise a page whose JavaScript
+   never arrives is a blank sheet of cream, which is the worst thing this
+   site could possibly be. See the boot script in app/layout.tsx. */
+html.js .u-reveal {
   opacity: 0;
   transform: translate3d(0, 1.75rem, 0);
   transition:
@@ -185,14 +189,14 @@ body::before {
   transition-delay: var(--reveal-delay, 0ms);
 }
 
-.u-reveal[data-shown="true"] {
+html.js .u-reveal[data-shown="true"] {
   opacity: 1;
   transform: none;
 }
 
 /* ── Anyone who asks for less motion gets a still, complete page ── */
 @media (prefers-reduced-motion: reduce) {
-  .u-reveal {
+  html.js .u-reveal {
     opacity: 1;
     transform: none;
     transition: none;
