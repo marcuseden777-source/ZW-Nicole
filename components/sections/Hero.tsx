@@ -57,6 +57,9 @@ export function Hero() {
       <div
         className="pointer-events-none absolute inset-x-0 bottom-[clamp(1.5rem,5vh,3rem)] z-10 flex flex-col items-center gap-2"
         data-no-print
+        // Hidden on a screen too short to hold it and the date at once — see
+        // the rule in globals.css. A phone held sideways is the case.
+        data-scroll-cue
       >
         <p className="u-eyebrow" style={{ color: "var(--color-champagne)" }}>
           Scroll

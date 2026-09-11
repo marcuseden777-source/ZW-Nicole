@@ -279,3 +279,15 @@ html.js .u-reveal[data-shown="true"] {
   pointer-events: none;
   transition: opacity 320ms var(--ease-silk);
 }
+
+/* The hero holds a minimum height of 34rem so the names have room to breathe.
+   On a phone held sideways that is taller than the whole screen, so the type
+   centres itself inside 544px of section while the scroll cue stays pinned to
+   the bottom of it — and "Singapore" and "Scroll" end up in the same place,
+   overlapping by up to 46px. The cue is decoration and a page that scrolls is
+   self-evident; the date and the city are not. */
+@media (max-height: 34rem) {
+  [data-scroll-cue] {
+    display: none;
+  }
+}
