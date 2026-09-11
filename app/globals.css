@@ -260,7 +260,11 @@ html.js .u-reveal[data-shown="true"] {
     display: none !important;
   }
 
-  .u-reveal {
+  .u-reveal,
+  /* The story's words fade in from a custom property that only moves as the
+     section is scrolled through. Printed from the top of the page, that
+     property is still 0 and their story came out as blank paper. */
+  .u-word {
     opacity: 1 !important;
     transform: none !important;
   }

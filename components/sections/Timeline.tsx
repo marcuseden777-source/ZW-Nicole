@@ -80,7 +80,10 @@ export function Timeline() {
                   className="u-display pr-4 pt-1 text-right text-[clamp(0.85rem,2.6vw,1rem)] uppercase tracking-[0.14em] transition-colors duration-700"
                   // Both states must be readable: the rose marks where you are,
                   // it does not decide which times you are allowed to read.
-                  style={{ color: passed ? "var(--color-gold-deep)" : "var(--color-ink-soft)" }}
+                  // gold-deep is the display gold and carries large type at
+                  // 3.84:1 — fine for a heading, under the 4.5:1 this size
+                  // needs. gold-ink is the same colour a step down, at 4.65:1.
+                  style={{ color: passed ? "var(--color-gold-ink)" : "var(--color-ink-soft)" }}
                 >
                   {item.time}
                 </p>
