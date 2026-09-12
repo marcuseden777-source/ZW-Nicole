@@ -1,3 +1,4 @@
+import { Diagnostics } from "@/components/Diagnostics";
 import { EntryGate } from "@/components/EntryGate";
 import { World } from "@/components/World";
 import { SkipLink } from "@/components/SkipLink";
@@ -127,6 +128,9 @@ export default async function Page() {
       </div>
 
       <StructuredData />
+
+      {/* Only ever visible with ?debug in the address. */}
+      <Diagnostics />
     </>
   );
 }

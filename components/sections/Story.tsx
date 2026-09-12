@@ -38,7 +38,10 @@ export function Story({ film }: { film: FilmSources | null }) {
   // the story is being read and not for the whole visit — it used to mount on
   // page load and draw continuously, several screens below a guest who was
   // still looking at a sealed envelope.
-  const useWebGL = near && capability.ready && capability.webgl && content.motion.webgl;
+  // The paper unrolling as the story is read is motion, so it is not shown
+  // to a guest who asked for less of it.
+  const useWebGL =
+    near && capability.ready && capability.webgl && !capability.reducedMotion && content.motion.webgl;
 
   /* How far through the story the reader is, written straight to the element
      every frame.

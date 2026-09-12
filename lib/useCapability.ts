@@ -5,7 +5,14 @@ import { useEffect, useState } from "react";
 export type Capability = {
   /** Settled once the browser has been measured. Render nothing heavy before this. */
   ready: boolean;
-  /** WebGL2 is present and the device looks willing to run it. */
+  /**
+   * WebGL2 is present and the device looks willing to run it.
+   *
+   * This says only what the hardware can do. Whether a given piece should
+   * MOVE is a separate question — see `reducedMotion` — because a still
+   * object rendered in three dimensions moves no more than a photograph of
+   * one, and refusing to draw it at all is not what the setting asks for.
+   */
   webgl: boolean;
   /** The guest has asked their system for reduced motion. Always obeyed. */
   reducedMotion: boolean;
@@ -60,9 +67,7 @@ export function useCapability(): Capability {
       const reducedMotion = motionQuery.matches;
       setCapability({
         ready: true,
-        // Reduced motion switches the 3D layer off entirely — a still page
-        // is the honest interpretation of that request.
-        webgl: !reducedMotion && detectWebGL(),
+        webgl: detectWebGL(),
         reducedMotion,
         lowPower: detectLowPower(),
       });

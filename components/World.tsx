@@ -31,7 +31,10 @@ export function World() {
   useEffect(() => subscribeToEntry(setEntered), []);
 
   if (!entered) return null;
-  if (!capability.ready || !capability.webgl || !content.motion.webgl) return null;
+  // Drifting layers carried by the scroll are motion, so a guest who asked
+  // for less of it gets none of this at all.
+  if (!capability.ready || !capability.webgl || capability.reducedMotion) return null;
+  if (!content.motion.webgl) return null;
 
   return (
     <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true" data-no-print>

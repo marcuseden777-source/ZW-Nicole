@@ -31,7 +31,7 @@ function sealShape(radius: number) {
   return shape;
 }
 
-function Seal({ monogram }: { monogram: string }) {
+function Seal({ monogram, still }: { monogram: string; still: boolean }) {
   const group = useRef<THREE.Group>(null);
   const relief = useMemo(() => createSealReliefMap(monogram, 512), [monogram]);
 
@@ -79,6 +79,11 @@ function Seal({ monogram }: { monogram: string }) {
   useFrame((state, delta) => {
     const g = group.current;
     if (!g) return;
+    // Held exactly where it was placed for a guest who asked for less motion.
+    // They still get the wax, the depth and the light on it; it simply does
+    // not turn. A still object rendered in three dimensions moves no more
+    // than a photograph of one.
+    if (still) return;
     const t = state.clock.elapsedTime;
     // A slow, shallow turn — enough to move the highlight across the wax and
     // prove the thing is solid, not so much that it reads as a spinning logo.
@@ -102,7 +107,16 @@ function Seal({ monogram }: { monogram: string }) {
  * page after the door. Small, lazily loaded, and gated by the same capability
  * check as everything else.
  */
-export function SealScene({ monogram, lowPower }: { monogram: string; lowPower: boolean }) {
+export function SealScene({
+  monogram,
+  lowPower,
+  still = false,
+}: {
+  monogram: string;
+  lowPower: boolean;
+  /** Render the seal, but never turn it. */
+  still?: boolean;
+}) {
   return (
     <Canvas
       dpr={lowPower ? [1, 1.4] : [1, 2]}
@@ -126,7 +140,7 @@ export function SealScene({ monogram, lowPower }: { monogram: string; lowPower: 
             <Lightformer intensity={1} color="#ffe2bd" position={[3, 0, 1.5]} scale={[3, 6, 1]} />
           </Environment>
         )}
-        <Seal monogram={monogram} />
+        <Seal monogram={monogram} still={still} />
       </Suspense>
     </Canvas>
   );

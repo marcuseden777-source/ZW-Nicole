@@ -23,6 +23,11 @@ export function Closing({ phase, film }: { phase: Phase; film: FilmSources | nul
   // Not merely "is WebGL available" — also "is anyone anywhere near this".
   // It used to mount on page load and render for the whole visit, several
   // screens below a guest who was still looking at the envelope.
+  // The seal is an object, not an animation. A guest who asked for less
+  // motion still gets it in wax with real depth and a real highlight — it
+  // simply does not turn. Switching the whole third dimension off for them
+  // was reading "reduce motion" as "remove everything", and on iOS that
+  // setting is on for a great many people who never thought of it as one.
   const useWebGL = near && capability.ready && capability.webgl && content.motion.webgl;
 
   return (
@@ -37,7 +42,11 @@ export function Closing({ phase, film }: { phase: Phase; film: FilmSources | nul
             device should not be asked for a second canvas. */}
         {useWebGL ? (
           <div className="u-reveal mx-auto h-40 w-40" data-no-print>
-            <SealScene monogram={content.couple.monogram} lowPower={capability.lowPower} />
+            <SealScene
+              monogram={content.couple.monogram}
+              lowPower={capability.lowPower}
+              still={capability.reducedMotion}
+            />
           </div>
         ) : (
           <SealMark
