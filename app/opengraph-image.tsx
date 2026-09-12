@@ -1,14 +1,46 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+
 import { ImageResponse } from "next/og";
 import * as content from "@/content/wedding";
 
-/* The card people actually see when the link is shared. Generated from the
-   same content file as the page, so it can never drift out of date. */
+/**
+ * The card people actually see when the link is shared.
+ *
+ * This is the most-viewed surface of the whole project — it appears in every
+ * WhatsApp forward and every iMessage thread, and most people will see it
+ * before they ever open the invitation. It has to look like the invitation.
+ *
+ * It did not. The card declared `fontFamily: "Georgia, serif"` and loaded no
+ * font at all; the renderer has no Georgia, so it silently fell back to a
+ * generic sans and the couple's names went out to everyone set in the one
+ * typeface that appears nowhere on the site. The three real faces are read
+ * from disk here and passed in. They are committed to the repository rather
+ * than fetched, so building this never depends on the network.
+ *
+ * Generated from the same content file as the page, so it cannot drift.
+ */
 
 export const alt = `${content.meta.title} — ${content.meta.tagline}`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
+const GOLD = "#9a7838";
+const GOLD_LIGHT = "#c2a15b";
+const INK = "#5c5145";
+const MUTED = "#8d7f6d";
+
+async function font(file: string) {
+  return readFile(join(process.cwd(), "app", "_fonts", file));
+}
+
 export default async function Image() {
+  const [script, serif, sans] = await Promise.all([
+    font("Italianno-Regular.ttf"),
+    font("CormorantGaramond-SemiBold.ttf"),
+    font("Jost-Regular.ttf"),
+  ]);
+
   return new ImageResponse(
     (
       <div
@@ -20,72 +52,90 @@ export default async function Image() {
           alignItems: "center",
           justifyContent: "center",
           background: "linear-gradient(150deg, #fdfaf4 0%, #f5ece0 48%, #e9d9bf 100%)",
-          fontFamily: "Georgia, serif",
-          color: "#3b332a",
+          fontFamily: "Jost",
+          color: INK,
           position: "relative",
         }}
       >
-        {/* A drawn frame, inset the way a printed card is */}
+        {/* The drawn frame a printed card has. Previously written with `inset`,
+            which this renderer ignores — both rules were simply absent from
+            every card that has gone out. Explicit box, explicit size. */}
         <div
           style={{
             position: "absolute",
-            inset: 38,
-            border: "1px solid #c2a15b",
-            opacity: 0.55,
+            top: 34,
+            left: 34,
+            width: size.width - 68,
+            height: size.height - 68,
+            border: `1px solid ${GOLD_LIGHT}`,
+            opacity: 0.5,
+            display: "flex",
           }}
         />
         <div
           style={{
             position: "absolute",
-            inset: 50,
-            border: "1px solid #c2a15b",
-            opacity: 0.3,
+            top: 44,
+            left: 44,
+            width: size.width - 88,
+            height: size.height - 88,
+            border: `1px solid ${GOLD_LIGHT}`,
+            opacity: 0.28,
+            display: "flex",
           }}
         />
 
         <div
           style={{
-            fontSize: 22,
-            letterSpacing: 10,
+            fontSize: 21,
+            letterSpacing: 11,
             textTransform: "uppercase",
-            color: "#a1917e",
+            color: MUTED,
             display: "flex",
           }}
         >
           {content.meta.tagline}
         </div>
 
+        {/* The names, in the hand they are written in on the page itself. */}
         <div
           style={{
-            fontSize: 104,
-            marginTop: 30,
-            color: "#9a7838",
+            fontFamily: "Italianno",
+            fontSize: 138,
+            lineHeight: 1.1,
+            marginTop: 4,
+            color: GOLD,
             display: "flex",
             alignItems: "center",
-            gap: 26,
+            gap: 22,
           }}
         >
           <span>{content.couple.partnerOne.name}</span>
-          <span style={{ fontSize: 62, color: "#c2a15b" }}>{content.couple.ampersand}</span>
+          <span style={{ color: GOLD_LIGHT }}>{content.couple.ampersand}</span>
           <span>{content.couple.partnerTwo.name}</span>
+        </div>
+
+        {/* The same small ornament the page uses between its sections. */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6 }}>
+          <div style={{ width: 96, height: 1, background: GOLD_LIGHT, opacity: 0.65, display: "flex" }} />
+          <div
+            style={{
+              width: 9,
+              height: 9,
+              borderRadius: 9,
+              border: `1px solid ${GOLD_LIGHT}`,
+              display: "flex",
+            }}
+          />
+          <div style={{ width: 96, height: 1, background: GOLD_LIGHT, opacity: 0.65, display: "flex" }} />
         </div>
 
         <div
           style={{
-            width: 220,
-            height: 1,
-            background: "#c2a15b",
-            opacity: 0.6,
-            margin: "38px 0",
-          }}
-        />
-
-        <div
-          style={{
-            fontSize: 27,
-            letterSpacing: 5,
-            textTransform: "uppercase",
-            color: "#6d6051",
+            fontFamily: "Cormorant Garamond",
+            fontSize: 40,
+            marginTop: 30,
+            color: INK,
             display: "flex",
           }}
         >
@@ -94,10 +144,11 @@ export default async function Image() {
 
         <div
           style={{
-            fontSize: 19,
-            letterSpacing: 4,
-            marginTop: 14,
-            color: "#a1917e",
+            fontSize: 18,
+            letterSpacing: 5,
+            textTransform: "uppercase",
+            marginTop: 16,
+            color: MUTED,
             display: "flex",
           }}
         >
@@ -105,6 +156,13 @@ export default async function Image() {
         </div>
       </div>
     ),
-    size,
+    {
+      ...size,
+      fonts: [
+        { name: "Italianno", data: script, weight: 400, style: "normal" },
+        { name: "Cormorant Garamond", data: serif, weight: 600, style: "normal" },
+        { name: "Jost", data: sans, weight: 400, style: "normal" },
+      ],
+    },
   );
 }
