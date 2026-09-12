@@ -282,9 +282,125 @@ export function createSealReliefMap(monogram: string, size = 512): THREE.CanvasT
 
   ctx.restore();
 
+  // The wax itself. A poured surface is never perfectly flat — it has slow
+  // undulations where it cooled unevenly and a fine tooth over the whole
+  // thing. Without this the face between the rings is mirror-flat, which is
+  // the single clearest tell that it is not wax.
+  ctx.save();
+  ctx.globalCompositeOperation = "overlay";
+  for (let i = 0; i < 260; i++) {
+    const a = (i * 2.399963) % (Math.PI * 2);
+    const d = Math.sqrt((i + 0.5) / 260) * size * 0.52;
+    const x = c + Math.cos(a) * d;
+    const y = c + Math.sin(a) * d;
+    const r = size * (0.02 + ((i * 7919) % 97) / 97 * 0.06);
+    const lift = ((i * 6151) % 89) / 89;
+    const blob = ctx.createRadialGradient(x, y, 0, x, y, r);
+    blob.addColorStop(0, `rgba(${lift > 0.5 ? 255 : 0},${lift > 0.5 ? 255 : 0},${lift > 0.5 ? 255 : 0},0.075)`);
+    blob.addColorStop(1, "rgba(128,128,128,0)");
+    ctx.fillStyle = blob;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
   const texture = new THREE.CanvasTexture(heightToNormal(canvas, 3.4));
   texture.colorSpace = THREE.NoColorSpace;
   texture.anisotropy = 4;
+  return texture;
+}
+
+/**
+ * The colour of the wax, place by place.
+ *
+ * A single flat red is the other half of why moulded plastic looks like
+ * moulded plastic: real wax is not one colour anywhere. It is deeper where it
+ * pooled thick, lighter and warmer where it ran thin at the edge and the
+ * light gets a little way into it, and marbled through with the swirl of it
+ * being melted and poured. None of that is lighting — it is in the material
+ * itself, and no amount of gloss will stand in for it.
+ *
+ * Kept near white so it multiplies the wax colour rather than replacing it;
+ * changing the shade stays a one-line job in the content file.
+ */
+export function createWaxAlbedo(size = 512): THREE.CanvasTexture {
+  const { canvas, ctx } = makeCanvas(size);
+  const c = size / 2;
+
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, size, size);
+
+  // Thinner and warmer towards the rim, where light gets into it.
+  const edge = ctx.createRadialGradient(c, c, size * 0.16, c, c, size * 0.52);
+  edge.addColorStop(0, "rgba(214,196,196,1)");
+  edge.addColorStop(0.72, "rgba(240,226,224,1)");
+  edge.addColorStop(1, "rgba(255,246,240,1)");
+  ctx.fillStyle = edge;
+  ctx.fillRect(0, 0, size, size);
+
+  // The swirl of wax that was melted and poured rather than cast.
+  ctx.filter = "blur(14px)";
+  for (let i = 0; i < 34; i++) {
+    const a = (i * 2.399963) % (Math.PI * 2);
+    const d = Math.sqrt((i + 0.5) / 34) * size * 0.46;
+    const x = c + Math.cos(a) * d;
+    const y = c + Math.sin(a) * d;
+    const r = size * (0.06 + ((i * 4241) % 67) / 67 * 0.13);
+    const deep = ((i * 6277) % 79) / 79 < 0.5;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, deep ? "rgba(176,150,150,0.5)" : "rgba(255,250,246,0.5)");
+    g.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.filter = "none";
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  return texture;
+}
+
+/**
+ * How glossy the wax is, place by place.
+ *
+ * A single roughness number gives an object one uniform sheen, and uniform
+ * sheen is what plastic has. Real sealing wax is glossier where it pooled and
+ * flowed and duller where it set thick, and the highlight breaks up across
+ * those patches rather than sliding over the whole surface at once.
+ */
+export function createWaxRoughness(size = 256): THREE.CanvasTexture {
+  const { canvas, ctx } = makeCanvas(size);
+
+  ctx.fillStyle = "#8a8a8a";
+  ctx.fillRect(0, 0, size, size);
+
+  ctx.filter = "blur(9px)";
+  for (let i = 0; i < 46; i++) {
+    const a = (i * 2.399963) % (Math.PI * 2);
+    const d = Math.sqrt((i + 0.5) / 46) * size * 0.55;
+    const x = size / 2 + Math.cos(a) * d;
+    const y = size / 2 + Math.sin(a) * d;
+    const r = size * (0.08 + ((i * 3571) % 71) / 71 * 0.16);
+    // Darker is glossier. The pools read wet, the rest holds a softer sheen.
+    const tone = ((i * 5417) % 83) / 83 < 0.55 ? 70 : 162;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, `rgba(${tone},${tone},${tone},0.55)`);
+    g.addColorStop(1, `rgba(${tone},${tone},${tone},0)`);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.NoColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
   return texture;
 }
 

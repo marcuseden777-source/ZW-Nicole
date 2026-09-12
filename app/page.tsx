@@ -11,6 +11,7 @@ import { Countdown } from "@/components/sections/Countdown";
 import { Faq } from "@/components/sections/Faq";
 import { Hero } from "@/components/sections/Hero";
 import { Gallery, Guestbook } from "@/components/sections/Keepsake";
+import { Library } from "@/components/sections/Library";
 import { Rsvp } from "@/components/sections/Rsvp";
 import { Story } from "@/components/sections/Story";
 import { Timeline } from "@/components/sections/Timeline";
@@ -67,13 +68,18 @@ export default async function Page() {
 
       {/* The shortcut for the guest in a taxi who wants the address and
           nothing else. Appears only once the door is open. */}
+      {/* Sections that depend on content are only offered when that content
+          exists. The client narrows this too, but the server already knows
+          whether there are photographs — and a guest without JavaScript only
+          ever gets what was rendered here. */}
       <Nav
-        destinations={
+        destinations={(
           phase === "invitation"
             ? [
                 { id: "welcome-heading", label: "The Invitation" },
                 { id: "story-heading", label: "Our Story" },
                 { id: "carousel-heading", label: "Moments" },
+                { id: "library-heading", label: "The Album" },
                 { id: "timeline-heading", label: "The Day" },
                 { id: "venue-heading", label: "Getting There" },
                 { id: "faq-heading", label: "Good to Know" },
@@ -83,7 +89,7 @@ export default async function Page() {
                 { id: "welcome-heading", label: "The Invitation" },
                 { id: "story-heading", label: "Our Story" },
                 { id: "carousel-heading", label: "Moments" },
-                { id: "gallery-heading", label: "The Day" },
+                { id: "library-heading", label: "The Album" },
                 // Guestbook renders nothing until somebody has written
                 // something, so listing it unconditionally gave the menu an
                 // entry that scrolled nowhere.
@@ -92,7 +98,7 @@ export default async function Page() {
                   : []),
                 { id: "venue-heading", label: "Getting There" },
               ]
-        }
+        ).filter((d) => (d.id === "library-heading" ? photos.length > 0 : true))}
       />
 
       <div id="site-root">
@@ -105,7 +111,10 @@ export default async function Page() {
         {phase === "invitation" && <Countdown />}
 
         <Story film={films.silk ?? null} />
-        <Carousel photos={photos} />
+        {/* The reel is a taster on a turning arc — right for a handful and
+            wrong for a hundred. Everything else is in the Album below it. */}
+        <Carousel photos={photos.slice(0, 8)} />
+        <Library photos={photos} />
 
         {phase === "invitation" ? (
           <>

@@ -22,7 +22,21 @@ type Destination = { id: string; label: string };
 export function Nav({ destinations }: { destinations: Destination[] }) {
   const [open, setOpen] = useState(false);
   const [entered, setEntered] = useState(hasEntered);
+  /**
+   * Only the destinations that are actually on the page.
+   *
+   * Sections come and go with the content — the Album is not there until
+   * there are photographs, the film is not there until there is a film — and
+   * a menu offering to take someone somewhere that does not exist is worse
+   * than a shorter menu. Settled after mount so the server and the first
+   * paint agree, then narrowed.
+   */
+  const [present, setPresent] = useState<Destination[]>(destinations);
   const [active, setActive] = useState(destinations[0]?.id ?? "");
+
+  useEffect(() => {
+    setPresent(destinations.filter((d) => document.getElementById(d.id)));
+  }, [destinations]);
   const panel = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
 
@@ -43,12 +57,12 @@ export function Nav({ destinations }: { destinations: Destination[] }) {
       { rootMargin: "-45% 0px -45% 0px", threshold: 0 },
     );
 
-    for (const d of destinations) {
+    for (const d of present) {
       const el = document.getElementById(d.id);
       if (el) observer.observe(el);
     }
     return () => observer.disconnect();
-  }, [entered, destinations]);
+  }, [entered, present]);
 
   // Escape closes it, and focus goes back where it came from.
   useEffect(() => {
@@ -175,7 +189,7 @@ export function Nav({ destinations }: { destinations: Destination[] }) {
 
           <nav>
             <ul className="space-y-1">
-              {destinations.map((d, i) => {
+              {present.map((d, i) => {
                 const here = active === d.id;
                 return (
                   <li key={d.id}>

@@ -3,11 +3,14 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
+import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
 import {
   createEmbossNormalMap,
   createPaperRoughness,
   createSealReliefMap,
+  createWaxAlbedo,
+  createWaxRoughness,
 } from "@/lib/textures";
 import { envelope as envelopeStyle } from "@/content/wedding";
 
@@ -52,21 +55,41 @@ function flapShape(halfWidth: number, depth: number, apexBleed: number) {
  * wobble for the way molten wax spreads unevenly under the press, and a little
  * fine noise. A single clean sine reads as a cog, not as wax.
  */
+/**
+ * The scalloped rim of the wax, in halves so it can break in two.
+ *
+ * The radius is the same smooth set of harmonics the closing seal uses, for
+ * the same reason: wax that has been pressed and has cooled has a WAVY edge,
+ * because a liquid cannot hold a corner. This used to add per-vertex random
+ * jitter, which is noise rather than waviness — every point moved
+ * independently of its neighbours, so the rim became a ring of small flat
+ * facets, each catching the light on its own. That is what made it read as
+ * moulded plastic rather than wax.
+ *
+ * Whole-number frequencies only, so the two halves still meet exactly.
+ */
+function sealRadius(radius: number, a: number) {
+  return (
+    radius *
+    (1 +
+      Math.sin(a * 9 + 0.4) * 0.062 +
+      Math.sin(a * 3 + 1.7) * 0.036 +
+      Math.sin(a * 5 - 0.8) * 0.021 +
+      Math.sin(a * 17 + 2.3) * 0.010 +
+      Math.sin(a * 26 - 0.6) * 0.005)
+  );
+}
+
 function sealShape(radius: number, half: "left" | "right" | "full") {
   const shape = new THREE.Shape();
-  const steps = 192;
-  const rand = (i: number) => Math.sin(i * 12.9898) * 43758.5453;
+  const steps = 320;
 
   const from = half === "right" ? -Math.PI / 2 : half === "left" ? Math.PI / 2 : 0;
   const to = half === "right" ? Math.PI / 2 : half === "left" ? (3 * Math.PI) / 2 : Math.PI * 2;
 
   for (let i = 0; i <= steps; i++) {
-    const t = i / steps;
-    const a = from + (to - from) * t;
-    const lobes = Math.sin(a * 10 + 0.4) * 0.072;
-    const spread = Math.sin(a * 3 + 1.7) * 0.038 + Math.sin(a * 5.5 - 0.8) * 0.022;
-    const jitter = (rand(i) - Math.floor(rand(i)) - 0.5) * 0.022;
-    const r = radius * (1 + lobes + spread + jitter);
+    const a = from + (to - from) * (i / steps);
+    const r = sealRadius(radius, a);
     const x = Math.cos(a) * r;
     const y = Math.sin(a) * r;
     if (i === 0) shape.moveTo(x, y);
@@ -111,6 +134,8 @@ export function Envelope({ openness, monogram }: Props) {
   );
   const roughness = useMemo(() => createPaperRoughness(256), []);
   const relief = useMemo(() => createSealReliefMap(monogram, 512), [monogram]);
+  const waxAlbedo = useMemo(() => createWaxAlbedo(512), []);
+  const waxRough = useMemo(() => createWaxRoughness(256), []);
 
   // Canvas textures are not garbage collected by three — release them by hand.
   useEffect(
@@ -118,8 +143,10 @@ export function Envelope({ openness, monogram }: Props) {
       emboss?.dispose();
       roughness.dispose();
       relief.dispose();
+      waxAlbedo.dispose();
+      waxRough.dispose();
     },
-    [emboss, roughness, relief],
+    [emboss, roughness, relief, waxAlbedo, waxRough],
   );
 
   const paper = useMemo(() => {
@@ -147,24 +174,35 @@ export function Envelope({ openness, monogram }: Props) {
     const span = 1 / (SEAL_RADIUS * 2);
     relief.repeat.set(span, span);
     relief.offset.set(0.5, 0.5);
+    waxAlbedo.repeat.set(span, span);
+    waxAlbedo.offset.set(0.5, 0.5);
+    waxRough.repeat.set(span * 1.6, span * 1.6);
+    waxRough.offset.set(0.5, 0.5);
     return new THREE.MeshPhysicalMaterial({
       color: envelopeStyle.waxColor,
+      // Wax is never one colour: deeper where it pooled, warmer and lighter
+      // at the thin edge. A single flat red is half of why moulded plastic
+      // looks moulded, and no amount of gloss stands in for it.
+      map: waxAlbedo,
       normalMap: relief,
-      normalScale: new THREE.Vector2(2.2, 2.2),
+      normalScale: new THREE.Vector2(2.9, 2.9),
       // Wax is a dielectric with a hard lacquered skin: rough underneath,
       // glossy on top, so the highlight sits on the surface rather than
-      // spreading through the colour.
-      roughness: 0.52,
+      // spreading through the colour. Varying it across the surface stops the
+      // highlight sliding over the whole thing at once, which is the other
+      // half of the plastic look.
+      roughnessMap: waxRough,
+      roughness: 0.78,
       metalness: 0,
-      clearcoat: 1,
-      clearcoatRoughness: 0.14,
-      reflectivity: 0.6,
-      sheen: 0.3,
-      sheenColor: new THREE.Color("#ff9a86"),
-      sheenRoughness: 0.5,
+      clearcoat: 0.85,
+      clearcoatRoughness: 0.16,
+      reflectivity: 0.55,
+      sheen: 0.16,
+      sheenColor: new THREE.Color("#c66a54"),
+      sheenRoughness: 0.75,
       transparent: true,
     });
-  }, [relief]);
+  }, [relief, waxAlbedo, waxRough]);
 
   useEffect(
     () => () => {
@@ -217,12 +255,25 @@ export function Envelope({ openness, monogram }: Props) {
       bevelEnabled: true,
       bevelThickness: 0.026,
       bevelSize: 0.022,
-      bevelSegments: 8,
-      curveSegments: 4,
+      // The domed edge of the wax is the part the eye lands on, and eight
+      // segments across it put visible steps in the highlight.
+      bevelSegments: 18,
+      curveSegments: 8,
     } as const;
 
-    const sealL = new THREE.ExtrudeGeometry(sealShape(SEAL_RADIUS, "left"), sealBevel);
-    const sealR = new THREE.ExtrudeGeometry(sealShape(SEAL_RADIUS, "right"), sealBevel);
+    // Flat per-facet normals are right for a machined part and wrong for
+    // something poured. Averaging across the joins lets the light run over
+    // the dome instead of stepping from facet to facet.
+    const pour = (g: THREE.ExtrudeGeometry) => {
+      g.deleteAttribute("normal");
+      const merged = mergeVertices(g);
+      merged.computeVertexNormals();
+      g.dispose();
+      return merged;
+    };
+
+    const sealL = pour(new THREE.ExtrudeGeometry(sealShape(SEAL_RADIUS, "left"), sealBevel));
+    const sealR = pour(new THREE.ExtrudeGeometry(sealShape(SEAL_RADIUS, "right"), sealBevel));
 
     const invitationCard = new THREE.ExtrudeGeometry(
       roundedRect(W * 0.9, H * 0.82, 0.02),
