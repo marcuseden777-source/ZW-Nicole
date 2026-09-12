@@ -35,17 +35,39 @@ const jost = Jost({
  * data are both built from it, so if it is wrong the card that lands in the
  * family WhatsApp group is wrong, and that is the first thing anybody sees.
  *
- * Set NEXT_PUBLIC_SITE_URL to the real domain. If nobody remembers to,
- * Vercel's own build-time variables are used rather than localhost — a
- * forgotten setting should not be the reason a link preview is broken.
+ * Every candidate is checked rather than merely present, because an
+ * environment variable that exists and is EMPTY is the ordinary result of
+ * adding one in a dashboard and not filling it in. `??` only steps past null
+ * and undefined, so an empty string was taken as the answer and `new URL("")`
+ * threw — during page-data collection, which fails the entire deployment.
+ * A blank box in a form should not be able to do that.
+ *
+ * A bare domain is accepted too. "zw-nicole.vercel.app" is what people paste,
+ * and refusing it on the grounds that it has no scheme helps nobody.
  */
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ??
-  (process.env.VERCEL_PROJECT_PRODUCTION_URL
-    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-    : process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : "http://localhost:3000");
+function resolveSiteUrl(): string {
+  const candidates = [
+    process.env.NEXT_PUBLIC_SITE_URL,
+    process.env.VERCEL_PROJECT_PRODUCTION_URL,
+    process.env.VERCEL_URL,
+  ];
+
+  for (const candidate of candidates) {
+    const value = candidate?.trim();
+    if (!value) continue;
+    const withScheme = /^https?:\/\//i.test(value) ? value : `https://${value}`;
+    try {
+      return new URL(withScheme).origin;
+    } catch {
+      // Whatever was typed in there is not an address. Try the next one
+      // rather than taking the whole build down over it.
+    }
+  }
+
+  return "http://localhost:3000";
+}
+
+const siteUrl = resolveSiteUrl();
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
