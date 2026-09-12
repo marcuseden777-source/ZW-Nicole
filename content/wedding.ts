@@ -161,7 +161,12 @@ export const venue = {
  *
  *  The questions guests actually ask. Add or remove freely.
  * ─────────────────────────────────────────────────────────────────────────── */
-export const faq = [
+export const faq: {
+  question: string;
+  answer: string;
+  /** Optional. Give an answer a way to act on itself. */
+  link?: { label: string; href: string };
+}[] = [
   {
     question: "What should I wear?",
     answer: "Smart casual — an outfit for a luncheon, to be specific.",
@@ -173,11 +178,15 @@ export const faq = [
   {
     question: "What's the RSVP deadline?",
     answer: "Please reply by the 31st of July, so we can get an accurate headcount.",
+    link: { label: "Reply now", href: "https://withjoy.com/nicole-zhiwei/rsvp?v=1" },
   },
   {
     question: "I have a dietary restriction — what should I do?",
     answer:
       "Do let us know beforehand, so we can have the restaurant prepare according to your needs.",
+    // Without this the answer is a dead end: it asks the guest to tell you
+    // something and offers them nowhere to say it.
+    link: { label: "Tell us in your reply", href: "https://withjoy.com/nicole-zhiwei/rsvp?v=1" },
   },
 ];
 
@@ -192,7 +201,6 @@ export const rsvp = {
   enabled: true,
   heading: "Will you be there?",
   note: "Kindly reply by the thirty-first of July, so we can hold your seat.",
-  deadlineDisplay: "31 July 2026",
   buttonLabel: "Reply to the invitation",
   url: "https://withjoy.com/nicole-zhiwei/rsvp?v=1",
 };

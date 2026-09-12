@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 
 import { AmbientFilm } from "@/components/AmbientFilm";
 import { CornerSpray, Divider, SealMark } from "@/components/ui/Ornaments";
+import { ShareInvitation } from "@/components/ShareInvitation";
 import { useCapability } from "@/lib/useCapability";
 import { useNearViewport } from "@/lib/useNearViewport";
 import * as content from "@/content/wedding";
@@ -54,6 +55,11 @@ export function Closing({ phase, film }: { phase: Phase; film: FilmSources | nul
           {content.couple.partnerOne.name} {content.couple.ampersand} {content.couple.partnerTwo.name}
         </p>
         <p className="u-eyebrow mt-3">{content.weddingDate.year}</p>
+
+        {/* An invitation is forwarded more often than it is opened. */}
+        <ShareInvitation
+          title={`${content.couple.partnerOne.name} ${content.couple.ampersand} ${content.couple.partnerTwo.name} — ${content.meta.tagline}`}
+        />
       </div>
     </footer>
   );

@@ -7,6 +7,10 @@ import * as content from "@/content/wedding";
  * Replies are collected on the couple's own Joy page, so this is a single
  * clear invitation to go there — not a second form asking the same guest the
  * same questions twice and splitting the headcount across two places.
+ *
+ * The date is said once, here, in words. It used to be repeated in figures
+ * seven rem below the button, which is the sort of thing that reads as two
+ * people having written the page.
  */
 export function Rsvp() {
   if (!content.rsvp.enabled || !content.rsvp.url) return null;
@@ -41,12 +45,6 @@ export function Rsvp() {
           >
             {content.rsvp.buttonLabel}
           </a>
-
-          {content.rsvp.deadlineDisplay && (
-            <p className="u-eyebrow mt-7 normal-case tracking-[0.14em]">
-              Kindly reply by {content.rsvp.deadlineDisplay}
-            </p>
-          )}
         </div>
       </div>
     </section>
