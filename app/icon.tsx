@@ -18,9 +18,14 @@ export const size = { width: 64, height: 64 };
 export const contentType = "image/png";
 
 export default async function Icon() {
-  const script = await readFile(
-    join(process.cwd(), "app", "_fonts", "Italianno-Regular.ttf"),
-  );
+  // Never throws: this runs during the build, so an unreadable font here
+  // would fail the deployment rather than merely spoil the icon.
+  let script: Buffer | null = null;
+  try {
+    script = await readFile(join(process.cwd(), "app", "_fonts", "Italianno-Regular.ttf"));
+  } catch {
+    script = null;
+  }
 
   return new ImageResponse(
     (
@@ -40,7 +45,8 @@ export default async function Icon() {
       >
         <div
           style={{
-            display: "flex",
+            // No font, no letters — the seal is still a seal.
+            display: script ? "flex" : "none",
             fontFamily: "Italianno",
             fontSize: 29,
             lineHeight: 1,
@@ -53,9 +59,13 @@ export default async function Icon() {
         </div>
       </div>
     ),
-    {
-      ...size,
-      fonts: [{ name: "Italianno", data: script, weight: 400, style: "normal" }],
-    },
+    script
+      ? {
+          ...size,
+          fonts: [
+            { name: "Italianno" as const, data: script, weight: 400 as const, style: "normal" as const },
+          ],
+        }
+      : size,
   );
 }

@@ -2,6 +2,9 @@
   "name": "zw-nicole",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "description": "A digital wedding invitation that becomes a permanent keepsake.",
   "scripts": {
     "dev": "next dev",

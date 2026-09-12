@@ -30,8 +30,53 @@ const GOLD_LIGHT = "#c2a15b";
 const INK = "#5c5145";
 const MUTED = "#8d7f6d";
 
+/**
+ * Never throws.
+ *
+ * This runs during the build, so a font that cannot be read would not
+ * degrade the card — it would fail the whole deployment. A share card in a
+ * substitute face is a disappointment; a wedding invitation that will not
+ * deploy the week it is due to go out is a different order of problem.
+ */
 async function font(file: string) {
-  return readFile(join(process.cwd(), "app", "_fonts", file));
+  try {
+    return await readFile(join(process.cwd(), "app", "_fonts", file));
+  } catch {
+    return null;
+  }
+}
+
+type Face = { name: string; data: Buffer; weight: 400 | 600; style: "normal" };
+
+/** The card stock, with no type on it. Needs no font, so it cannot fail. */
+function blankCard() {
+  return new ImageResponse(
+    (
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          background: "linear-gradient(150deg, #fdfaf4 0%, #f5ece0 48%, #e9d9bf 100%)",
+          position: "relative",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: 34,
+            left: 34,
+            width: size.width - 68,
+            height: size.height - 68,
+            border: `1px solid ${GOLD_LIGHT}`,
+            opacity: 0.5,
+            display: "flex",
+          }}
+        />
+      </div>
+    ),
+    size,
+  );
 }
 
 export default async function Image() {
@@ -40,6 +85,18 @@ export default async function Image() {
     font("CormorantGaramond-SemiBold.ttf"),
     font("Jost-Regular.ttf"),
   ]);
+
+  const faces: Face[] = [];
+  if (script) faces.push({ name: "Italianno", data: script, weight: 400, style: "normal" });
+  if (serif) faces.push({ name: "Cormorant Garamond", data: serif, weight: 600, style: "normal" });
+  if (sans) faces.push({ name: "Jost", data: sans, weight: 400, style: "normal" });
+
+  // The renderer cannot lay out a single character without a font, so if none
+  // of the three could be read there is no card to draw — only the paper it
+  // would have been printed on. The link preview still carries the title and
+  // description from the page metadata, and the build still finishes, which
+  // is the part that matters.
+  if (faces.length === 0) return blankCard();
 
   return new ImageResponse(
     (
@@ -156,13 +213,6 @@ export default async function Image() {
         </div>
       </div>
     ),
-    {
-      ...size,
-      fonts: [
-        { name: "Italianno", data: script, weight: 400, style: "normal" },
-        { name: "Cormorant Garamond", data: serif, weight: 600, style: "normal" },
-        { name: "Jost", data: sans, weight: 400, style: "normal" },
-      ],
-    },
+    { ...size, fonts: faces },
   );
 }
