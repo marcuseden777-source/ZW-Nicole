@@ -234,9 +234,89 @@ function captionFromName(file: string): string {
   if (!withoutOrder) return "";
   // A bare camera filename describes nothing.
   if (/^(img|dsc|dscf|p|pxl|photo|image)[-_]?\d+$/i.test(withoutOrder)) return "";
+
   const words = withoutOrder.replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim();
   if (!words) return "";
+
+  // Everything past here is one question: did a person write this, or did a
+  // computer? Photographs downloaded from a gallery service arrive named
+  // things like "4Liz0ElQVW4wXNVi2Ytr_7IV01280.png", and the rules above
+  // happily turn that into "Liz0ElQVW4wXNVi2Ytr 7IV01280" — which then
+  // becomes the caption under the picture AND the sentence read aloud to a
+  // guest using a screen reader. A wrong caption is worse than no caption,
+  // and gibberish read aloud is worse than silence.
+  //
+  // So a caption has to look like language. Anything that does not is
+  // discarded, and the picture falls back to "Photograph 4 of 29" — which is
+  // at least true.
+  for (const token of words.split(" ")) {
+    // An identifier: letters and digits jammed together. No English word is.
+    if (/[A-Za-z]/.test(token) && /\d/.test(token)) return "";
+    // A long run with no vowel in it is a hash, not a word.
+    if (token.length >= 8 && !/[aeiouy]/i.test(token)) return "";
+    // Capitals appearing mid-word, at length: base64 and camel-cased keys.
+    if (token.length >= 12 && /[a-z][A-Z]/.test(token)) return "";
+  }
+
   return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+/**
+ * The same photograph, twice.
+ *
+ * Copying a folder of pictures out of a download tends to produce pairs —
+ * "…772.png" beside "…772 (1).png" — and a wedding album that shows the same
+ * moment twice, two columns apart, looks like a mistake because it is one.
+ *
+ * Names are checked first because that is where the duplicates announce
+ * themselves; bytes are checked second, because the same picture saved twice
+ * under different names is the case names cannot catch. Neither deletes
+ * anything: the file stays exactly where the couple put it, it is simply not
+ * shown twice, and the build log says which ones and why.
+ */
+function dropDuplicates(
+  files: string[],
+  read: (file: string) => Buffer | null,
+): { kept: string[]; dropped: { file: string; because: string }[] } {
+  const stems = new Set(files.map((f) => f.replace(/\.[^.]+$/, "")));
+  const kept: string[] = [];
+  const dropped: { file: string; because: string }[] = [];
+  const seen = new Map<string, string>();
+
+  for (const file of files) {
+    const stem = file.replace(/\.[^.]+$/, "");
+    // "Photograph (1)" next to "Photograph".
+    const copy = stem.match(/^(.*?)\s*\((\d+)\)$/);
+    if (copy && stems.has(copy[1])) {
+      dropped.push({ file, because: `a copy of "${copy[1]}"` });
+      continue;
+    }
+
+    const bytes = read(file);
+    if (bytes) {
+      // Length plus a sample from four places. Two different photographs
+      // agreeing on all five is not something that happens; reading every
+      // byte of a hundred full-size pictures on every build is.
+      const at = (n: number) => bytes.readUInt32BE(Math.min(n, Math.max(0, bytes.length - 4)));
+      const key = [
+        bytes.length,
+        at(0),
+        at(bytes.length >> 2),
+        at(bytes.length >> 1),
+        at(bytes.length - 8),
+      ].join(":");
+      const first = seen.get(key);
+      if (first) {
+        dropped.push({ file, because: `identical to "${first}"` });
+        continue;
+      }
+      seen.set(key, file);
+    }
+
+    kept.push(file);
+  }
+
+  return { kept, dropped };
 }
 
 const caches = new Map<string, Photo[]>();
@@ -262,10 +342,29 @@ export async function readGallery(folder = "gallery"): Promise<Photo[]> {
 
   const sharp = await loadSharp();
 
-  const photos = files
+  const named = files
     .filter((f) => IMAGE.test(f) && !f.startsWith("."))
     // Numeric-aware, so 10 comes after 9 rather than after 1.
-    .sort((a, b) => a.localeCompare(b, "en", { numeric: true, sensitivity: "base" }))
+    .sort((a, b) => a.localeCompare(b, "en", { numeric: true, sensitivity: "base" }));
+
+  const { kept, dropped: duplicates } = dropDuplicates(named, (file) => {
+    try {
+      return readFileSync(join(PUBLIC, folder, file));
+    } catch {
+      return null;
+    }
+  });
+
+  if (duplicates.length > 0) {
+    console.warn(
+      `\n[gallery] ${duplicates.length} duplicate photograph(s) in /public/${folder} ` +
+        `were not shown twice:\n` +
+        duplicates.map((d) => `  ${d.file}  —  ${d.because}`).join("\n") +
+        `\n  Delete them if you would rather they were gone for good.\n`,
+    );
+  }
+
+  const photos = kept
     .map((file): Photo | null => {
       const path = join(PUBLIC, folder, file);
 

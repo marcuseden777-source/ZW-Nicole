@@ -20,7 +20,13 @@ export function Hero() {
     <section aria-labelledby="hero-heading" className="relative h-[100svh] min-h-[34rem]">
       <HeroFilm reducedMotion={capability.reducedMotion} />
 
-      <div className="relative z-10 flex h-full flex-col items-center justify-center px-[var(--gutter)] text-center">
+      <div
+        className="relative z-10 flex h-full flex-col items-center justify-center px-[var(--gutter)] text-center"
+        // The type travels a little slower than the film behind it as the
+        // page pulls away, which is the whole of what depth is on a screen.
+        data-m="drift"
+        style={{ "--depth": 0.34 } as React.CSSProperties}
+      >
         <p
           className="u-eyebrow"
           // Champagne is a page colour; over an open sky it measured 2.9:1.

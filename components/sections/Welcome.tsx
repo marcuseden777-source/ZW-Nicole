@@ -26,6 +26,8 @@ export function Welcome() {
               // The skip link lands here, so it must be focusable.
               tabIndex={-1}
               className="u-script u-foil text-[clamp(2.5rem,9vw,4.25rem)]"
+              data-lines
+              data-m
             >
               {content.opening.salutation}
             </h2>

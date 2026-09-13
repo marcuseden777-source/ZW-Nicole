@@ -3,15 +3,14 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
-import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
 import {
   createEmbossNormalMap,
   createPaperRoughness,
-  createSealReliefMap,
   createWaxAlbedo,
   createWaxRoughness,
 } from "@/lib/textures";
+import { applyWaxScattering, buildWaxGeometry } from "@/lib/waxSeal";
 import { envelope as envelopeStyle } from "@/content/wedding";
 
 const W = 1;
@@ -55,51 +54,6 @@ function flapShape(halfWidth: number, depth: number, apexBleed: number) {
  * wobble for the way molten wax spreads unevenly under the press, and a little
  * fine noise. A single clean sine reads as a cog, not as wax.
  */
-/**
- * The scalloped rim of the wax, in halves so it can break in two.
- *
- * The radius is the same smooth set of harmonics the closing seal uses, for
- * the same reason: wax that has been pressed and has cooled has a WAVY edge,
- * because a liquid cannot hold a corner. This used to add per-vertex random
- * jitter, which is noise rather than waviness — every point moved
- * independently of its neighbours, so the rim became a ring of small flat
- * facets, each catching the light on its own. That is what made it read as
- * moulded plastic rather than wax.
- *
- * Whole-number frequencies only, so the two halves still meet exactly.
- */
-function sealRadius(radius: number, a: number) {
-  return (
-    radius *
-    (1 +
-      Math.sin(a * 9 + 0.4) * 0.062 +
-      Math.sin(a * 3 + 1.7) * 0.036 +
-      Math.sin(a * 5 - 0.8) * 0.021 +
-      Math.sin(a * 17 + 2.3) * 0.010 +
-      Math.sin(a * 26 - 0.6) * 0.005)
-  );
-}
-
-function sealShape(radius: number, half: "left" | "right" | "full") {
-  const shape = new THREE.Shape();
-  const steps = 320;
-
-  const from = half === "right" ? -Math.PI / 2 : half === "left" ? Math.PI / 2 : 0;
-  const to = half === "right" ? Math.PI / 2 : half === "left" ? (3 * Math.PI) / 2 : Math.PI * 2;
-
-  for (let i = 0; i <= steps; i++) {
-    const a = from + (to - from) * (i / steps);
-    const r = sealRadius(radius, a);
-    const x = Math.cos(a) * r;
-    const y = Math.sin(a) * r;
-    if (i === 0) shape.moveTo(x, y);
-    else shape.lineTo(x, y);
-  }
-
-  if (half !== "full") shape.closePath();
-  return shape;
-}
-
 /* ── Component ───────────────────────────────────────────────────────────── */
 
 type Props = {
@@ -133,7 +87,6 @@ export function Envelope({ openness, monogram }: Props) {
     [],
   );
   const roughness = useMemo(() => createPaperRoughness(256), []);
-  const relief = useMemo(() => createSealReliefMap(monogram, 512), [monogram]);
   const waxAlbedo = useMemo(() => createWaxAlbedo(512), []);
   const waxRough = useMemo(() => createWaxRoughness(256), []);
 
@@ -142,11 +95,10 @@ export function Envelope({ openness, monogram }: Props) {
     () => () => {
       emboss?.dispose();
       roughness.dispose();
-      relief.dispose();
       waxAlbedo.dispose();
       waxRough.dispose();
     },
-    [emboss, roughness, relief, waxAlbedo, waxRough],
+    [emboss, roughness, waxAlbedo, waxRough],
   );
 
   const paper = useMemo(() => {
@@ -169,40 +121,35 @@ export function Envelope({ openness, monogram }: Props) {
   }, [emboss, roughness]);
 
   const wax = useMemo(() => {
-    // The seal's front face carries UVs equal to its own shape coordinates, so
-    // mapping the relief across the disc is a matter of scaling by its radius.
-    const span = 1 / (SEAL_RADIUS * 2);
-    relief.repeat.set(span, span);
-    relief.offset.set(0.5, 0.5);
-    waxAlbedo.repeat.set(span, span);
-    waxAlbedo.offset.set(0.5, 0.5);
-    waxRough.repeat.set(span * 1.6, span * 1.6);
-    waxRough.offset.set(0.5, 0.5);
-    return new THREE.MeshPhysicalMaterial({
+    for (const map of [waxAlbedo, waxRough]) {
+      map.repeat.set(1, 1);
+      map.offset.set(0, 0);
+      map.wrapS = map.wrapT = THREE.ClampToEdgeWrapping;
+    }
+    const m = new THREE.MeshPhysicalMaterial({
       color: envelopeStyle.waxColor,
       // Wax is never one colour: deeper where it pooled, warmer and lighter
       // at the thin edge. A single flat red is half of why moulded plastic
       // looks moulded, and no amount of gloss stands in for it.
       map: waxAlbedo,
-      normalMap: relief,
-      normalScale: new THREE.Vector2(2.9, 2.9),
-      // Wax is a dielectric with a hard lacquered skin: rough underneath,
-      // glossy on top, so the highlight sits on the surface rather than
-      // spreading through the colour. Varying it across the surface stops the
-      // highlight sliding over the whole thing at once, which is the other
-      // half of the plastic look.
+      // The other half is that wax is translucent. The thickness measured
+      // while the geometry was built rides along on the mesh, so light
+      // scatters through the rim and the pressed letters and nowhere else.
+      vertexColors: true,
       roughnessMap: waxRough,
-      roughness: 0.78,
+      roughness: 0.62,
       metalness: 0,
-      clearcoat: 0.85,
-      clearcoatRoughness: 0.16,
-      reflectivity: 0.55,
-      sheen: 0.16,
-      sheenColor: new THREE.Color("#c66a54"),
-      sheenRoughness: 0.75,
+      clearcoat: 0.72,
+      clearcoatRoughness: 0.22,
+      reflectivity: 0.42,
+      sheen: 0.2,
+      sheenColor: new THREE.Color("#d07a5c"),
+      sheenRoughness: 0.68,
       transparent: true,
     });
-  }, [relief, waxAlbedo, waxRough]);
+    applyWaxScattering(m, { color: "#ef7042", strength: 0.9 });
+    return m;
+  }, [waxAlbedo, waxRough]);
 
   useEffect(
     () => () => {
@@ -250,30 +197,24 @@ export function Envelope({ openness, monogram }: Props) {
       curveSegments: 20,
     });
 
-    const sealBevel = {
-      depth: 0.012,
-      bevelEnabled: true,
-      bevelThickness: 0.026,
-      bevelSize: 0.022,
-      // The domed edge of the wax is the part the eye lands on, and eight
-      // segments across it put visible steps in the highlight.
-      bevelSegments: 18,
-      curveSegments: 8,
-    } as const;
-
-    // Flat per-facet normals are right for a machined part and wrong for
-    // something poured. Averaging across the joins lets the light run over
-    // the dome instead of stepping from facet to facet.
-    const pour = (g: THREE.ExtrudeGeometry) => {
-      g.deleteAttribute("normal");
-      const merged = mergeVertices(g);
-      merged.computeVertexNormals();
-      g.dispose();
-      return merged;
-    };
-
-    const sealL = pour(new THREE.ExtrudeGeometry(sealShape(SEAL_RADIUS, "left"), sealBevel));
-    const sealR = pour(new THREE.ExtrudeGeometry(sealShape(SEAL_RADIUS, "right"), sealBevel));
+    // The two halves of one seal: the same outline table read across
+    // different arcs, so the edge runs continuously over the join and the
+    // break is a real broken face rather than a flat slice.
+    // "lean" on purpose: this is the door, and it is built between the tap
+    // and the envelope opening. The seal is a hundred-odd pixels across here,
+    // where the closing one fills a third of the column.
+    const sealL = buildWaxGeometry({
+      monogram,
+      detail: "lean",
+      radius: SEAL_RADIUS,
+      arc: [Math.PI / 2, (3 * Math.PI) / 2],
+    }).geometry;
+    const sealR = buildWaxGeometry({
+      monogram,
+      detail: "lean",
+      radius: SEAL_RADIUS,
+      arc: [-Math.PI / 2, Math.PI / 2],
+    }).geometry;
 
     const invitationCard = new THREE.ExtrudeGeometry(
       roundedRect(W * 0.9, H * 0.82, 0.02),
@@ -281,7 +222,7 @@ export function Envelope({ openness, monogram }: Props) {
     );
 
     return { back, side, bottom, top, sealL, sealR, invitationCard };
-  }, []);
+  }, [monogram]);
 
   useEffect(
     () => () => Object.values(geometries).forEach((g) => g.dispose()),
@@ -401,8 +342,18 @@ export function Envelope({ openness, monogram }: Props) {
         <mesh geometry={geometries.top} material={paper} castShadow receiveShadow />
       </group>
 
-      {/* The wax seal, in two halves waiting to be broken */}
-      <group position={[0, 0, 0.051]}>
+      {/* The wax seal, in two halves waiting to be broken.
+
+          0.056 rather than 0.051, and the number matters. The old seal was an
+          extruded solid whose bevel reached back behind the paper, so where
+          it sat was never visible. The real one is a thin shell poured ON the
+          flap: its underside IS its underside, and at 0.051 that underside
+          sat six ten-thousandths behind the top flap's front face at 0.052 —
+          so the flap won the depth test across the whole thin outer half of
+          the wax and drew a cream triangle over the monogram. Wax is poured
+          on top of a closed envelope; this is where it goes, with enough
+          clearance that the flap's own bevel cannot graze the thin rim. */}
+      <group position={[0, 0, 0.061]}>
         {(
           [
             [sealLeft, geometries.sealL, "left"] as const,

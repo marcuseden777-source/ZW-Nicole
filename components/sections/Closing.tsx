@@ -41,7 +41,21 @@ export function Closing({ phase, film }: { phase: Phase; film: FilmSources | nul
         {/* The motif returns in three dimensions — or flat, for anyone whose
             device should not be asked for a second canvas. */}
         {useWebGL ? (
-          <div className="u-reveal mx-auto h-40 w-40" data-no-print>
+          <div
+            className="u-reveal relative mx-auto h-[clamp(11rem,26vw,15rem)] w-[clamp(11rem,26vw,15rem)]"
+            data-no-print
+          >
+            {/* The shadow it casts on the page. Wax does not float, and a
+                soft ellipse under it costs nothing and does more for the
+                sense of a real object sitting on real paper than another
+                thousand triangles would. Drawn in CSS rather than in the
+                scene because the canvas is transparent and has no ground to
+                receive one. */}
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute left-1/2 top-[62%] -z-10 h-[26%] w-[76%] -translate-x-1/2 rounded-[50%] blur-[14px]"
+              style={{ background: "rgba(92, 52, 30, 0.2)" }}
+            />
             <SealScene
               monogram={content.couple.monogram}
               lowPower={capability.lowPower}

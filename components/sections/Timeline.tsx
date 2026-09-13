@@ -31,7 +31,9 @@ export function Timeline({ phase }: { phase: Phase }) {
         <header className="text-center">
           <h2
             id="timeline-heading"
-            className="u-reveal u-script text-[clamp(2.5rem,9vw,4rem)] text-gold-deep"
+            className="u-script text-[clamp(2.5rem,9vw,4rem)] text-gold-deep"
+            data-lines
+            data-m
           >
             {/* In the keepsake phase the gallery wall is already called "The
                 Day". Two 4rem headings with the same words, three sections

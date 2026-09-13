@@ -143,7 +143,9 @@ export function Library({ photos }: { photos: Photo[] }) {
         <header className="text-center">
           <h2
             id="library-heading"
-            className="u-reveal u-script text-[clamp(2.5rem,9vw,4rem)] text-gold-deep"
+            className="u-script text-[clamp(2.5rem,9vw,4rem)] text-gold-deep"
+            data-lines
+            data-m
           >
             The Album
           </h2>
@@ -172,13 +174,17 @@ export function Library({ photos }: { photos: Photo[] }) {
                 const described =
                   photo.alt || `Photograph ${index + 1} of ${photos.length}`;
                 return (
-                  <figure key={photo.src} className="u-reveal">
+                  <figure key={photo.src} data-m="reveal">
                     <button
                       type="button"
                       onClick={() => setOpen(index)}
                       className="group relative block w-full overflow-hidden rounded-sm border bg-parchment"
                       style={{ borderColor: "var(--rule)" }}
                     >
+                      {/* The scale lives on this wrapper rather than on the
+                          picture, so the settle-into-place and the hover
+                          scale compose instead of overwriting each other. */}
+                      <span className="block" data-m-inner>
                       <Image
                         src={photo.src}
                         alt={described}
@@ -195,6 +201,7 @@ export function Library({ photos }: { photos: Photo[] }) {
                         loading={index < columns.length ? "eager" : "lazy"}
                         className="h-auto w-full transition-transform duration-[1.3s] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.04]"
                       />
+                      </span>
                       {photo.alt && (
                         // A span, not a <figcaption>. A caption element has to
                         // be a child of its <figure>, and this sits inside the

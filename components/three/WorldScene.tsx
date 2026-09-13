@@ -5,7 +5,8 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { Suspense, useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 
-import { createPetalTexture, createSealReliefMap } from "@/lib/textures";
+import { createPetalTexture, createWaxAlbedo, createWaxRoughness } from "@/lib/textures";
+import { applyWaxScattering, buildWaxGeometry } from "@/lib/waxSeal";
 import { envelope as envelopeStyle, couple } from "@/content/wedding";
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -91,65 +92,66 @@ function Drift({
   );
 }
 
-/** The seal, hanging in the world, and yours to spin. */
+/**
+ * The seal, hanging in the world, and yours to spin.
+ *
+ * Two things were wrong with this and they were both design rather than code.
+ *
+ * It was a scalloped disc with a normal map on it, eight segments across the
+ * bevel and a clearcoat at full strength — a red plastic button the size of a
+ * dinner plate. It is real wax now: the same geometry the closing seal is
+ * built from, with the impression pressed into actual vertices and light
+ * scattering through the thin rim. See lib/waxSeal.ts.
+ *
+ * And it wandered the entire length of the document, which meant it spent the
+ * middle of the page sitting on top of the photographs. Decoration that
+ * covers the content is not decoration. It now belongs to the opening — the
+ * invitation itself — and has left before the first photograph arrives.
+ */
 function FloatingSeal({ progress }: { progress: RefObject<number> }) {
   const group = useRef<THREE.Group>(null);
   const spin = useRef(0);
   const momentum = useRef(0);
 
+  // Coarser than the closing seal: it is a third of the size on screen, a
+  // long way back, and usually turning.
+  const { geometry } = useMemo(() => buildWaxGeometry({ monogram: couple.monogram, detail: "lean" }), []);
+  const rough = useMemo(() => createWaxRoughness(256), []);
+  const albedo = useMemo(() => createWaxAlbedo(512), []);
 
-  const relief = useMemo(() => createSealReliefMap(couple.monogram, 512), []);
   const material = useMemo(() => {
-    relief.repeat.set(0.5, 0.5);
-    relief.offset.set(0.5, 0.5);
-    return new THREE.MeshPhysicalMaterial({
-      color: envelopeStyle.waxColor,
-      normalMap: relief,
-      normalScale: new THREE.Vector2(2.2, 2.2),
-      roughness: 0.52,
-      metalness: 0,
-      clearcoat: 1,
-      clearcoatRoughness: 0.14,
-      reflectivity: 0.6,
-      sheen: 0.3,
-      sheenColor: new THREE.Color("#ff9a86"),
-    });
-  }, [relief]);
-
-  const geometry = useMemo(() => {
-    const shape = new THREE.Shape();
-    const steps = 192;
-    const rnd = (i: number) => Math.sin(i * 12.9898) * 43758.5453;
-    for (let i = 0; i <= steps; i++) {
-      const a = (i / steps) * Math.PI * 2;
-      const r =
-        1 *
-        (1 +
-          Math.sin(a * 10 + 0.4) * 0.072 +
-          Math.sin(a * 3 + 1.7) * 0.038 +
-          (rnd(i) - Math.floor(rnd(i)) - 0.5) * 0.022);
-      const x = Math.cos(a) * r;
-      const y = Math.sin(a) * r;
-      i === 0 ? shape.moveTo(x, y) : shape.lineTo(x, y);
+    for (const map of [rough, albedo]) {
+      map.repeat.set(1, 1);
+      map.offset.set(0, 0);
+      map.wrapS = map.wrapT = THREE.ClampToEdgeWrapping;
     }
-    shape.closePath();
-    return new THREE.ExtrudeGeometry(shape, {
-      depth: 0.12,
-      bevelEnabled: true,
-      bevelThickness: 0.22,
-      bevelSize: 0.19,
-      bevelSegments: 8,
-      curveSegments: 4,
+    const m = new THREE.MeshPhysicalMaterial({
+      color: envelopeStyle.waxColor,
+      map: albedo,
+      vertexColors: true,
+      roughnessMap: rough,
+      roughness: 0.6,
+      metalness: 0,
+      clearcoat: 0.7,
+      clearcoatRoughness: 0.24,
+      reflectivity: 0.42,
+      sheen: 0.18,
+      sheenColor: new THREE.Color("#d07a5c"),
+      sheenRoughness: 0.7,
+      transparent: true,
     });
-  }, []);
+    applyWaxScattering(m, { color: "#ef7042", strength: 0.85 });
+    return m;
+  }, [rough, albedo]);
 
   useEffect(
     () => () => {
-      relief.dispose();
+      rough.dispose();
+      albedo.dispose();
       material.dispose();
       geometry.dispose();
     },
-    [relief, material, geometry],
+    [rough, albedo, material, geometry],
   );
 
   useFrame((state, delta) => {
@@ -157,6 +159,13 @@ function FloatingSeal({ progress }: { progress: RefObject<number> }) {
     if (!g) return;
     const t = state.clock.elapsedTime;
     const p = progress.current;
+
+    // Present for the opening, gone by the photographs. Faded rather than
+    // switched off, so it leaves rather than disappears.
+    const life = 1 - smoothstep(0.2, 0.34, p);
+    material.opacity = life;
+    g.visible = life > 0.01;
+    if (!g.visible) return;
 
     // Follows the cursor across the page and keeps turning when it stops,
     // so it reads as an object being looked at rather than a sprite.
@@ -167,14 +176,10 @@ function FloatingSeal({ progress }: { progress: RefObject<number> }) {
     g.rotation.y = spin.current + Math.sin(t * 0.25) * 0.28;
     g.rotation.x = THREE.MathUtils.damp(g.rotation.x, -state.pointer.y * 0.3, 3, delta);
 
-    // Travels down the page with the reader, and turns as it goes.
-    g.position.set(
-      3.1 + state.pointer.x * 0.35,
-      2.4 - p * 9,
-      -1.2,
-    );
-    const near = 1 - Math.abs(p - 0.55) * 1.8;
-    g.scale.setScalar(0.5 + Math.max(0, near) * 0.42);
+    // Out in the right margin and well behind the page, where a guest reading
+    // the invitation can see it turning but never has to read around it.
+    g.position.set(4.05 + state.pointer.x * 0.28, 2.2 - p * 7, -3.1);
+    g.scale.setScalar(0.5 * life);
   });
 
   return (
@@ -182,6 +187,11 @@ function FloatingSeal({ progress }: { progress: RefObject<number> }) {
       <mesh geometry={geometry} material={material} />
     </group>
   );
+}
+
+function smoothstep(a: number, b: number, x: number) {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
 }
 
 /** Light that turns from candle to dusk as the evening goes on. */
@@ -198,14 +208,16 @@ function Evening({ progress }: { progress: RefObject<number> }) {
       key.current.color.copy(scratch.copy(warm).lerp(dusk, p));
       key.current.position.set(-2.6 + p * 5.2, 3 - p * 1.4, 2.4);
     }
-    if (ambient.current) ambient.current.intensity = 0.9 - p * 0.22;
+    if (ambient.current) ambient.current.intensity = 0.42 - p * 0.1;
   });
 
   return (
     <>
-      <ambientLight ref={ambient} intensity={0.9} color="#fff5e6" />
-      <directionalLight ref={key} position={[-2.6, 3, 2.4]} intensity={1.9} color="#fff0d6" />
-      <directionalLight position={[2.8, -1.2, 1.6]} intensity={0.5} color="#fdf3e4" />
+      <ambientLight ref={ambient} intensity={0.42} color="#fff5e6" />
+      <directionalLight ref={key} position={[-2.6, 3, 2.4]} intensity={2.4} color="#fff0d6" />
+      <directionalLight position={[2.8, -1.2, 1.6]} intensity={0.45} color="#fdf3e4" />
+      {/* Behind the world, for the wax to glow through. */}
+      <directionalLight position={[1.4, 1.2, -4]} intensity={1.3} color="#ff9a5c" />
     </>
   );
 }

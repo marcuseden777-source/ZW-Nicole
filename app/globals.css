@@ -336,3 +336,186 @@ html.js .u-reveal[data-shown="true"] {
 html.gating #site-root {
   visibility: hidden;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   S C R O L L - L I N K E D   M O T I O N
+
+   lib/motion.ts gives every [data-m] element two numbers each frame
+   and nothing else:
+
+     --e   0 → 1 as it arrives, and never goes back down
+     --p   0 → 1 as it crosses the whole screen, 0.5 at dead centre
+
+   Everything below is written in terms of those two. That means the
+   feel of the entire site can be retuned here, in CSS, without
+   touching a line of JavaScript — and it means every effect is
+   frame-accurate to the scroll rather than a timed animation that
+   fires near it and then runs on its own clock.
+
+   Both have fallbacks. Before the engine has written anything — and
+   forever, if scripting never arrives — every element sits at its
+   FINISHED state. Nothing on this page is ever hidden by default.
+   ═══════════════════════════════════════════════════════════════ */
+
+[data-m] {
+  --e: 1;
+  --p: 0.5;
+}
+
+html.motion-on [data-m] {
+  --e: 0;
+}
+
+/* Arriving. The workhorse: a short lift and a fade, tied to the scroll
+   rather than to a duration, so it lands exactly as the reader gets to it. */
+[data-m~="rise"] {
+  opacity: var(--e);
+  transform: translate3d(0, calc((1 - var(--e)) * 2.2rem), 0);
+}
+
+/* Arriving from the side, for anything that reads as being set into place —
+   a date beside a time, a caption beside a picture. */
+[data-m~="slide"] {
+  opacity: var(--e);
+  transform: translate3d(calc((1 - var(--e)) * -1.6rem), 0, 0);
+}
+
+[data-m~="slide-r"] {
+  opacity: var(--e);
+  transform: translate3d(calc((1 - var(--e)) * 1.6rem), 0, 0);
+}
+
+/* A photograph unmasking. The frame opens from the top while the picture
+   inside settles back from 1.14 — the two moving against each other is what
+   makes it read as a camera finding the shot rather than a div appearing. */
+[data-m~="reveal"] {
+  clip-path: inset(0 0 calc((1 - var(--e)) * 101%) 0);
+}
+
+[data-m~="reveal"] [data-m-inner] {
+  transform: scale(calc(1.14 - var(--e) * 0.14));
+  transform-origin: 50% 60%;
+}
+
+/* Parallax. Positive depth travels slower than the page, which is what
+   distance does. Set --depth inline; 0.1 is a whisper, 0.5 is a lot. */
+[data-m~="drift"] {
+  transform: translate3d(0, calc((var(--p) - 0.5) * var(--depth, 0.18) * 26rem), 0);
+}
+
+/* The slow push through a photograph as it crosses the screen. Scroll-linked,
+   so it stops dead when the reader stops — a Ken Burns on a timer running
+   under a still page is the tell that nothing is really connected. */
+[data-m~="push"] [data-m-inner] {
+  transform: scale(calc(1.04 + var(--p) * 0.09));
+}
+
+/* Both at once. Two rules setting `transform` on the same element do not
+   compose — the later one simply wins — so the combination is written out
+   rather than left to luck. */
+[data-m~="reveal"][data-m~="push"] [data-m-inner] {
+  transform: scale(calc(1.14 - var(--e) * 0.14 + var(--p) * 0.07));
+}
+
+/* A focus pull. Expensive on a large area — used only where it earns it. */
+[data-m~="focus"] {
+  filter: blur(calc((1 - var(--e)) * 7px));
+  opacity: calc(0.15 + var(--e) * 0.85);
+}
+
+/* ── Type, set line by line ──────────────────────────────────────
+   lib/motion.ts splits a [data-lines] heading into its real rendered
+   lines and wraps each in a mask. Each line then works out its own
+   progress from the heading's single --e and its own index, so a
+   four-line heading costs one custom-property write per frame and
+   still arrives one line after another. */
+.u-line {
+  display: block;
+  overflow: hidden;
+  /* Ascenders and descenders live outside the line box; without this the
+     mask clips the tops of the capitals and the tails of the g's. */
+  padding-block: 0.12em;
+  margin-block: -0.12em;
+}
+
+.u-line-i {
+  display: block;
+  --lp: clamp(0, calc((var(--e) - var(--li) * 0.14) * 1.7), 1);
+  transform: translate3d(0, calc((1 - var(--lp)) * 110%), 0);
+  opacity: var(--lp);
+}
+
+[data-lines]:not([data-split="done"]) {
+  /* Between hydration and the split, the heading is still one block of text.
+     Leave it alone — it is legible, and hiding it would flash. */
+  opacity: 1;
+}
+
+/* ── The candle ──────────────────────────────────────────────────
+   A very soft warm light that lags a long way behind the pointer.
+   Not a cursor effect: there is nothing to see directly, and on a
+   touch screen it never runs at all. It exists because evenly lit
+   from nowhere is the one thing a photograph never is. */
+html.candle-on body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    38rem 38rem at var(--cx, 50%) var(--cy, 35%),
+    rgba(255, 236, 202, 0.5),
+    rgba(255, 236, 202, 0.14) 38%,
+    transparent 64%
+  );
+  mix-blend-mode: soft-light;
+}
+
+/* ── Anyone who asked for less motion gets the finished page ───── */
+@media (prefers-reduced-motion: reduce) {
+  [data-m],
+  html.motion-on [data-m] {
+    --e: 1 !important;
+    --p: 0.5 !important;
+  }
+
+  [data-m~="drift"],
+  [data-m~="push"] [data-m-inner],
+  [data-m~="reveal"] [data-m-inner] {
+    transform: none !important;
+  }
+
+  [data-m~="reveal"] {
+    clip-path: none !important;
+  }
+
+  [data-m~="focus"] {
+    filter: none !important;
+  }
+
+  html.candle-on body::after {
+    display: none;
+  }
+}
+
+/* ── On paper, everything has arrived ───────────────────────────── */
+@media print {
+  [data-m],
+  html.motion-on [data-m] {
+    --e: 1 !important;
+    --p: 0.5 !important;
+    opacity: 1 !important;
+    filter: none !important;
+    clip-path: none !important;
+    transform: none !important;
+  }
+
+  .u-line-i {
+    transform: none !important;
+    opacity: 1 !important;
+  }
+
+  body::after {
+    display: none !important;
+  }
+}

@@ -4,6 +4,7 @@ import Lenis from "lenis";
 import { useEffect, useState } from "react";
 
 import { subscribeToEntry, hasEntered } from "@/lib/entryState";
+import { startCandle, startMotion, startSplit } from "@/lib/motion";
 import { useReveal } from "@/lib/useReveal";
 
 /**
@@ -23,6 +24,19 @@ export function SmoothScroll() {
   const [entered, setEntered] = useState(hasEntered);
 
   useEffect(() => subscribeToEntry(setEntered), []);
+
+  // The choreography, started once for the life of the page and deliberately
+  // NOT waiting on the door. The page behind the envelope is laid out and
+  // measured while the guest is still looking at the wax, so the first thing
+  // they see after it opens is already in the right place rather than
+  // catching up.
+  //
+  // Each of these is independent and each returns its own teardown, so one
+  // failing to start never takes the others with it.
+  useEffect(() => {
+    const stop = [startMotion(), startSplit(), startCandle()];
+    return () => stop.forEach((s) => s());
+  }, []);
 
   useEffect(() => {
     if (!entered) return;
