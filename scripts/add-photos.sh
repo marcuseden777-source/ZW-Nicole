@@ -14,6 +14,20 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
+# Make sure this is the invitation and not, say, a home directory that happens
+# to be a git repository. Running the wrong git command in the wrong folder is
+# how an afternoon disappears.
+if [ ! -f "content/wedding.ts" ] || [ ! -d "components" ]; then
+  echo "This does not look like the ZW-Nicole project."
+  echo
+  echo "Run it from inside the repository — the folder holding content/ and"
+  echo "components/, probably ~/Desktop/ZW-Nicole:"
+  echo
+  echo "  cd ~/Desktop/ZW-Nicole"
+  echo "  bash scripts/add-photos.sh ~/Desktop/ZW-Nicole/wedding"
+  exit 1
+fi
+
 SRC="${1:-}"
 DEST="public/gallery"
 # Plenty for any screen: the site serves each picture at the size the device
@@ -96,7 +110,17 @@ echo "description read aloud to a guest who cannot see the photograph, so"
 echo "write them as you would describe it to someone on the telephone."
 echo "A camera's own name — IMG_4471.jpg — is fine; it simply gets no caption."
 echo
-echo "Then:"
-echo "  git add public/gallery"
-echo '  git commit -m "The photographs"'
-echo "  git push"
+# The step that most often goes wrong is running git from the wrong folder,
+# so print the path rather than leaving it to be guessed.
+REPO="$(pwd)"
+BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "your branch")"
+
+echo "Now copy these three lines, exactly:"
+echo
+echo "  cd \"$REPO\""
+echo "  git add public/gallery && git commit -m \"The photographs\""
+echo "  git push origin $BRANCH"
+echo
+echo "The cd matters. Run git anywhere else and it will either complain about"
+echo "an upstream branch or start listing files that have nothing to do with"
+echo "this — that is a different repository answering, not this one."
