@@ -15,6 +15,21 @@ shows today.
 
 Drop image files into **`/public/gallery`**. That is the whole procedure.
 
+From a folder on your own machine, one command does it:
+
+```bash
+bash scripts/add-photos.sh ~/Desktop/zw-nicole/wedding
+```
+
+It copies everything across, turns iPhone HEIC files into JPEGs that browsers
+can actually display, and brings anything enormous down to a sensible size —
+the site serves each picture at whatever size the device asks for, so weight
+beyond that is downloaded by nobody. Then `git add public/gallery`, commit and
+push.
+
+It has to run on **your** machine. The build environment is a container with
+no access to your Desktop.
+
 ```
 public/gallery/                      ← the Moments reel
   01 — Signing the register.jpg
