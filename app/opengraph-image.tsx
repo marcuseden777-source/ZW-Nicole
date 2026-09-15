@@ -196,7 +196,16 @@ export default async function Image() {
             display: "flex",
           }}
         >
-          {content.weddingDate.display}
+          {/* The year, in figures, appended rather than set on its own line.
+              This card is read at about 200px wide in a chat thread, and
+              "Sunday, the Eleventh of October" thirteen months ahead does not
+              say WHICH October. The page spells the year out because it has
+              room to; a thumbnail does not, and being understood in one
+              glance is the entire job here.
+
+              Taken from the ISO date rather than typed, so it can never drift
+              away from the date everything else is computed from. */}
+          {content.weddingDate.display} {content.weddingDate.iso.slice(0, 4)}
         </div>
 
         <div
