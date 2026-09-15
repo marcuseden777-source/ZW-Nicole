@@ -21,6 +21,33 @@ type Report = Record<string, string>;
 export function Diagnostics() {
   const [report, setReport] = useState<Report | null>(null);
   const [hidden, setHidden] = useState(false);
+  const [fps, setFps] = useState("measuring…");
+
+  // A live frame counter, because frame rate is the one thing that cannot be
+  // measured anywhere except on the guest's own device. A build machine with
+  // no GPU composites, blurs and scales every image on the CPU, so any number
+  // it produces is a number about the build machine. Scroll with this open
+  // and the answer is the real one.
+  useEffect(() => {
+    if (!new URLSearchParams(window.location.search).has("debug")) return;
+    let frames = 0;
+    let last = performance.now();
+    let worst = 999;
+    let raf = 0;
+    const tick = (now: number) => {
+      frames++;
+      if (now - last >= 1000) {
+        const rate = Math.round((frames * 1000) / (now - last));
+        worst = Math.min(worst, rate);
+        setFps(`${rate} now, ${worst} worst`);
+        frames = 0;
+        last = now;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
 
   useEffect(() => {
     if (!new URLSearchParams(window.location.search).has("debug")) return;
@@ -60,6 +87,7 @@ export function Diagnostics() {
     out["treated as low power"] = cores <= 4 || (memory > 0 && memory <= 4) ? "yes" : "no";
 
     out["content.motion.webgl"] = String(content.motion.webgl);
+    out["device pixel ratio"] = String(window.devicePixelRatio);
 
     // Two different answers, because they are now two different questions.
     const canDraw = !!gl && !software && content.motion.webgl;
@@ -101,7 +129,9 @@ export function Diagnostics() {
         close
       </button>
       <p style={{ fontWeight: 700, marginBottom: 8 }}>Why the 3D is on or off here</p>
-      {Object.entries(report).map(([k, v]) => (
+      {/* Live, so it updates while the page is scrolled rather than
+          reporting one number from the moment the panel opened. */}
+      {Object.entries({ "frames per second": fps, ...report }).map(([k, v]) => (
         <div key={k} style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
           <span style={{ opacity: 0.62, minWidth: 150, flexShrink: 0 }}>{k}</span>
           <span

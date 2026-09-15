@@ -96,7 +96,11 @@ export function SoundTrack({
         }}
         // Bottom left, because the menu owns the top right and nothing should
         // ever have to be hunted for.
-        className="fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-[max(1.25rem,env(safe-area-inset-left))] z-[90] flex h-11 w-11 items-center justify-center rounded-full border bg-ivory/80 backdrop-blur-sm transition-colors duration-300 hover:bg-ivory"
+        // Solid rather than blurred. backdrop-filter on a FIXED element makes the
+        // compositor re-read everything behind it on every frame it is on screen,
+        // which is all of them — and against a cream page the blur was doing
+        // nothing a flat ivory does not.
+        className="fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-[max(1.25rem,env(safe-area-inset-left))] z-[90] flex h-11 w-11 items-center justify-center rounded-full border bg-ivory transition-colors duration-300 hover:bg-parchment"
         style={{ borderColor: "var(--rule)", opacity: ready ? 1 : 0 }}
         aria-pressed={playing}
         aria-label={playing ? `Turn off ${label}` : `Play ${label}`}

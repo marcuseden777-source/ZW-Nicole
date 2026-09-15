@@ -194,7 +194,11 @@ body::before {
 .u-grain::before {
   content: "";
   position: absolute;
-  inset: -50%;
+  /* -6%, not -50%. The drift moves this by at most 2% of its own size, so
+     -50% was making the layer twice as wide and twice as tall as the section
+     it covers — four times the pixels to composite every frame, on the
+     devices least able to spare them, for nothing anyone can see. */
+  inset: -6%;
   pointer-events: none;
   opacity: 0.028;
   /* A single tiny tiling SVG noise — no image request, no decode. */

@@ -128,7 +128,10 @@ export function Nav({ destinations }: { destinations: Destination[] }) {
         onClick={() => setOpen(true)}
         aria-expanded={open}
         aria-haspopup="dialog"
-        className="fixed right-[clamp(1rem,3vw,2rem)] top-[clamp(1rem,3vw,2rem)] z-40 flex h-12 w-12 items-center justify-center rounded-full border bg-ivory/85 backdrop-blur-sm transition-transform duration-500 hover:scale-105"
+        // Solid, not blurred. This is fixed and on screen for the whole visit,
+        // and backdrop-filter makes the compositor re-read everything behind it
+        // every frame — for a blur nobody can see against a cream page.
+        className="fixed right-[clamp(1rem,3vw,2rem)] top-[clamp(1rem,3vw,2rem)] z-40 flex h-12 w-12 items-center justify-center rounded-full border bg-ivory transition-transform duration-500 hover:scale-105"
         style={{ borderColor: "var(--rule)" }}
         data-no-print
         // Lives outside #site-root, so an overlay has to silence it by name.

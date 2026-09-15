@@ -137,7 +137,10 @@ export function WorldScene({
 
   return (
     <Canvas
-      dpr={lowPower ? [1, 1.3] : [1, 1.75]}
+      // A backdrop does not need to out-resolve the page in front of it,
+      // and this is the canvas that runs for the whole visit rather than
+      // just the door.
+      dpr={lowPower ? [1, 1] : [1, 1.5]}
       gl={{ antialias: !lowPower, alpha: true, powerPreference: "low-power" }}
       camera={{ position: [0, 0, 6], fov: 42 }}
       onCreated={({ gl }) => {
