@@ -17,6 +17,7 @@
  * itself on when its files exist and stays quietly off when they do not.
  */
 
+import { createHash } from "node:crypto";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 
@@ -265,58 +266,88 @@ function captionFromName(file: string): string {
  * The same photograph, twice.
  *
  * Copying a folder of pictures out of a download tends to produce pairs —
- * "…772.png" beside "…772 (1).png" — and a wedding album that shows the same
- * moment twice, two columns apart, looks like a mistake because it is one.
+ * "…772.png" beside "…772 (1).png" — and an album that shows the same moment
+ * twice, two columns apart, looks like a mistake because it is one.
  *
- * Names are checked first because that is where the duplicates announce
- * themselves; bytes are checked second, because the same picture saved twice
- * under different names is the case names cannot catch. Neither deletes
- * anything: the file stays exactly where the couple put it, it is simply not
- * shown twice, and the build log says which ones and why.
+ * This used to trust the "(1)". It was wrong, and it was wrong in the worst
+ * direction: of the four such pairs in the couple's own folder, TWO were
+ * different pictures — one was a landscape and a portrait crop of the same
+ * shot, the other two different versions — and both would have been deleted
+ * from the album without anyone being told. Meanwhile the one genuine
+ * duplicate in the set was a pair with entirely unrelated names, which no
+ * amount of reading filenames would ever have caught.
+ *
+ * So the filename is not evidence. The bytes are. Every picture is hashed and
+ * only an exact match is dropped; a name that merely looks like a copy is
+ * kept and mentioned, because deciding between two versions of a photograph
+ * is the couple's job, not the build's. Nothing is deleted from disk either
+ * way — a file that is not shown is still sitting in the folder.
  */
 function dropDuplicates(
   files: string[],
   read: (file: string) => Buffer | null,
-): { kept: string[]; dropped: { file: string; because: string }[] } {
-  const stems = new Set(files.map((f) => f.replace(/\.[^.]+$/, "")));
-  const kept: string[] = [];
-  const dropped: { file: string; because: string }[] = [];
-  const seen = new Map<string, string>();
+): {
+  kept: string[];
+  dropped: { file: string; because: string }[];
+  lookalikes: string[];
+} {
+  const stemOf = (file: string) => file.replace(/\.[^.]+$/, "");
+  const copyOf = (file: string) => stemOf(file).match(/^(.*?)\s*\(\d+\)$/)?.[1] ?? null;
 
+  // One pass to hash, one to decide. Deciding as we go made the answer depend
+  // on the order the folder happened to be read in, and it sorts "X (1).png"
+  // BEFORE "X.png" — so the copy was the one that survived and the clean name
+  // was the one dropped.
+  const hashes = new Map<string, string>();
   for (const file of files) {
-    const stem = file.replace(/\.[^.]+$/, "");
-    // "Photograph (1)" next to "Photograph".
-    const copy = stem.match(/^(.*?)\s*\((\d+)\)$/);
-    if (copy && stems.has(copy[1])) {
-      dropped.push({ file, because: `a copy of "${copy[1]}"` });
-      continue;
-    }
-
     const bytes = read(file);
-    if (bytes) {
-      // Length plus a sample from four places. Two different photographs
-      // agreeing on all five is not something that happens; reading every
-      // byte of a hundred full-size pictures on every build is.
-      const at = (n: number) => bytes.readUInt32BE(Math.min(n, Math.max(0, bytes.length - 4)));
-      const key = [
-        bytes.length,
-        at(0),
-        at(bytes.length >> 2),
-        at(bytes.length >> 1),
-        at(bytes.length - 8),
-      ].join(":");
-      const first = seen.get(key);
-      if (first) {
-        dropped.push({ file, because: `identical to "${first}"` });
-        continue;
-      }
-      seen.set(key, file);
-    }
-
-    kept.push(file);
+    // Unreadable here is not a verdict — readGallery measures every picture
+    // properly further down and reports anything it cannot use. Keep it.
+    if (bytes) hashes.set(file, createHash("sha1").update(bytes).digest("hex"));
   }
 
-  return { kept, dropped };
+  const groups = new Map<string, string[]>();
+  for (const [file, hash] of hashes) {
+    const group = groups.get(hash);
+    if (group) group.push(file);
+    else groups.set(hash, [file]);
+  }
+
+  // Of several identical files, keep the one whose name a person would rather
+  // see — never the "(1)". Beyond that the earliest in the existing order.
+  const winners = new Map<string, string>();
+  for (const [hash, group] of groups) {
+    const proper = group.filter((f) => copyOf(f) === null);
+    winners.set(hash, (proper.length ? proper : group)[0]);
+  }
+
+  const kept: string[] = [];
+  const dropped: { file: string; because: string }[] = [];
+
+  for (const file of files) {
+    const hash = hashes.get(file);
+    if (hash === undefined) {
+      kept.push(file);
+      continue;
+    }
+    const winner = winners.get(hash)!;
+    if (winner === file) kept.push(file);
+    else dropped.push({ file, because: `byte for byte identical to "${winner}"` });
+  }
+
+  // And the opposite mistake: a name that looks like a copy but is a
+  // different picture. Checked against everything that survived rather than
+  // against what happened to be read first, for the same reason.
+  const keptStems = new Set(kept.map(stemOf));
+  const lookalikes: string[] = [];
+  for (const file of kept) {
+    const base = copyOf(file);
+    if (base && keptStems.has(base)) {
+      lookalikes.push(`${file}  is NOT a copy of  ${base}`);
+    }
+  }
+
+  return { kept, dropped, lookalikes };
 }
 
 const caches = new Map<string, Photo[]>();
@@ -347,7 +378,7 @@ export async function readGallery(folder = "gallery"): Promise<Photo[]> {
     // Numeric-aware, so 10 comes after 9 rather than after 1.
     .sort((a, b) => a.localeCompare(b, "en", { numeric: true, sensitivity: "base" }));
 
-  const { kept, dropped: duplicates } = dropDuplicates(named, (file) => {
+  const { kept, dropped: duplicates, lookalikes } = dropDuplicates(named, (file) => {
     try {
       return readFileSync(join(PUBLIC, folder, file));
     } catch {
@@ -360,7 +391,17 @@ export async function readGallery(folder = "gallery"): Promise<Photo[]> {
       `\n[gallery] ${duplicates.length} duplicate photograph(s) in /public/${folder} ` +
         `were not shown twice:\n` +
         duplicates.map((d) => `  ${d.file}  —  ${d.because}`).join("\n") +
-        `\n  Delete them if you would rather they were gone for good.\n`,
+        `\n  The files are untouched. Delete them if you would rather they were ` +
+        `gone for good.\n`,
+    );
+  }
+
+  if (lookalikes.length > 0) {
+    console.warn(
+      `\n[gallery] ${lookalikes.length} file(s) in /public/${folder} look like copies ` +
+        `but are different pictures, so BOTH are shown:\n  ` +
+        lookalikes.join("\n  ") +
+        `\n  If one of each pair should not be in the album, delete that file.\n`,
     );
   }
 
