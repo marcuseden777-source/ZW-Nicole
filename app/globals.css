@@ -83,6 +83,27 @@ body::before {
   border-radius: 2px;
 }
 
+/* ── Orphans ─────────────────────────────────────────────────────
+   One word alone on the last line of a paragraph is the commonest
+   thing that makes careful typesetting look careless, and the browser
+   will fix it for nothing. `pretty` only reflows the last few lines,
+   so it is cheap even on the story.
+
+   Inside @layer base deliberately. Unlayered CSS beats every layered
+   rule no matter how specific, so an unlayered `p` here would quietly
+   overrule `text-balance` on any heading that asked for it — which is
+   exactly how `.u-eyebrow` once overruled `text-white` on the RSVP
+   button and put it at 1.23:1. Layered, a utility wins.
+   ──────────────────────────────────────────────────────────────── */
+@layer base {
+  p,
+  li,
+  blockquote,
+  figcaption {
+    text-wrap: pretty;
+  }
+}
+
 /* ── Typography helpers ──────────────────────────────────────────
    Inside @layer components deliberately.
 
