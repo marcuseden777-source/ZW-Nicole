@@ -17,11 +17,16 @@ export function Hero() {
   const capability = useCapability();
 
   return (
-    <section aria-labelledby="hero-heading" className="relative h-[100svh] min-h-[34rem]">
+    <section
+      aria-labelledby="hero-heading"
+      // A column, so the cue below can hold its own space instead of being
+      // absolutely positioned into the type.
+      className="relative flex h-[100svh] min-h-[34rem] flex-col"
+    >
       <HeroFilm reducedMotion={capability.reducedMotion} />
 
       <div
-        className="relative z-10 flex h-full flex-col items-center justify-center px-[var(--gutter)] text-center"
+        className="relative z-10 flex flex-1 flex-col items-center justify-center px-[var(--gutter)] text-center"
         // The type travels a little slower than the film behind it as the
         // page pulls away, which is the whole of what depth is on a screen.
         data-m="drift"
@@ -67,12 +72,19 @@ export function Hero() {
         </p>
       </div>
 
-      {/* Scroll cue */}
+      {/* Scroll cue.
+
+          In normal flow, not absolutely positioned. It used to be pinned to
+          the bottom while the names were centred in the full height, and the
+          two laid out in ignorance of each other: on any screen short enough
+          — or wide enough, since the names scale with the viewport WIDTH —
+          "SUNDAY, THE ELEVENTH OF OCTOBER" and "SCROLL" were drawn on top of
+          one another. There was a guard for it at max-height 34rem, but that
+          treated a layout problem as a breakpoint problem and a 40rem-tall
+          window still collided. As a flex item it simply takes its space and
+          the type centres in what is left, at every size, by construction. */}
       <div
-        // Lifted clear of the band where the film hands over to the page
-        // colour. Sitting inside it, the cue had the lightest background on
-        // the whole hero behind it and measured 4.33:1 against the 4.5 it needs.
-        className="pointer-events-none absolute inset-x-0 bottom-[clamp(3rem,12vh,5.5rem)] z-10 flex flex-col items-center gap-2"
+        className="pointer-events-none relative z-10 flex shrink-0 flex-col items-center gap-2 pb-[clamp(1.75rem,7vh,4rem)]"
         data-no-print
         // Hidden on a screen too short to hold it and the date at once — see
         // the rule in globals.css. A phone held sideways is the case.
