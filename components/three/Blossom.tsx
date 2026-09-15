@@ -321,10 +321,14 @@ function ModelledBranch({
     const size = new THREE.Vector3();
     new THREE.Box3().setFromObject(copy).getSize(size);
     // Fitted to the screen rather than trusting whatever scale the exporter
-    // happened to choose.
-    copy.scale.setScalar((viewportHeight * 0.85) / Math.max(size.y, 0.0001));
+    // happened to choose — and to the SHORT edge, not the height. Scaling a
+    // tall branch by a tall viewport put almost all of it off the side of a
+    // phone, which is where the first attempt left it: two slivers of petal
+    // behind the photographs.
+    const fit = Math.min(viewportWidth * 0.8, viewportHeight * 0.85);
+    copy.scale.setScalar(fit / Math.max(size.y, 0.0001));
     return copy;
-  }, [scene, viewportHeight]);
+  }, [scene, viewportWidth, viewportHeight]);
 
   useFrame((_, delta) => {
     const g = group.current;
@@ -333,7 +337,9 @@ function ModelledBranch({
     grown.current = THREE.MathUtils.damp(grown.current, want, 3.2, delta);
     const t = grown.current;
     g.scale.setScalar(0.3 + t * 0.7);
-    g.position.x = mirror * (viewportWidth / 2 + 0.5 - t * 0.6);
+    // Held closer in than the first pass, so the branch is on the page
+    // rather than at the edge of it.
+    g.position.x = mirror * (viewportWidth / 2 + 0.2 - t * 0.42);
     g.rotation.z =
       mirror * (0.4 - t * 0.2) + Math.sin(performance.now() * 0.00016) * 0.02 * mirror;
   });
