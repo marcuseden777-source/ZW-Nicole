@@ -20,7 +20,7 @@ import { Venue } from "@/components/sections/Venue";
 import { Welcome } from "@/components/sections/Welcome";
 import * as content from "@/content/wedding";
 import type { Phase } from "@/content/wedding";
-import { readAmbient, readDayGallery, readGallery } from "@/lib/media";
+import { readAmbient, readBlossomModel, readDayGallery, readGallery } from "@/lib/media";
 
 /**
  * Which life the site is living. The hosting dashboard can override the
@@ -46,6 +46,7 @@ export default async function Page() {
   // of the wedding itself, which the keepsake wall shows afterwards.
   const [photos, dayPhotos] = await Promise.all([readGallery(), readDayGallery()]);
   const films = readAmbient();
+  const blossom = readBlossomModel();
 
   // The three full-bleed pauses choose their own photographs, so nobody ever
   // has to name a file — and they keep choosing sensibly as pictures are
@@ -79,7 +80,7 @@ export default async function Page() {
       <SmoothScroll />
 
       {/* One scene the whole document scrolls through, behind everything. */}
-      <World />
+      <World blossom={blossom} />
 
       {/* The shortcut for the guest in a taxi who wants the address and
           nothing else. Appears only once the door is open. */}

@@ -5,9 +5,9 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { Suspense, useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 
-import { createPetalTexture, createWaxAlbedo, createWaxRoughness } from "@/lib/textures";
-import { applyWaxScattering, buildWaxGeometry } from "@/lib/waxSeal";
-import { envelope as envelopeStyle, couple } from "@/content/wedding";
+import { createPetalTexture } from "@/lib/textures";
+import { BlossomBranch } from "./Blossom";
+
 
 /* ═══════════════════════════════════════════════════════════════════════
  *  One world, behind the whole page.
@@ -92,108 +92,6 @@ function Drift({
   );
 }
 
-/**
- * The seal, hanging in the world, and yours to spin.
- *
- * Two things were wrong with this and they were both design rather than code.
- *
- * It was a scalloped disc with a normal map on it, eight segments across the
- * bevel and a clearcoat at full strength — a red plastic button the size of a
- * dinner plate. It is real wax now: the same geometry the closing seal is
- * built from, with the impression pressed into actual vertices and light
- * scattering through the thin rim. See lib/waxSeal.ts.
- *
- * And it wandered the entire length of the document, which meant it spent the
- * middle of the page sitting on top of the photographs. Decoration that
- * covers the content is not decoration. It now belongs to the opening — the
- * invitation itself — and has left before the first photograph arrives.
- */
-function FloatingSeal({ progress }: { progress: RefObject<number> }) {
-  const group = useRef<THREE.Group>(null);
-  const spin = useRef(0);
-  const momentum = useRef(0);
-
-  // Coarser than the closing seal: it is a third of the size on screen, a
-  // long way back, and usually turning.
-  const { geometry } = useMemo(() => buildWaxGeometry({ monogram: couple.monogram, detail: "lean" }), []);
-  const rough = useMemo(() => createWaxRoughness(256), []);
-  const albedo = useMemo(() => createWaxAlbedo(512), []);
-
-  const material = useMemo(() => {
-    for (const map of [rough, albedo]) {
-      map.repeat.set(1, 1);
-      map.offset.set(0, 0);
-      map.wrapS = map.wrapT = THREE.ClampToEdgeWrapping;
-    }
-    const m = new THREE.MeshPhysicalMaterial({
-      color: envelopeStyle.waxColor,
-      map: albedo,
-      vertexColors: true,
-      roughnessMap: rough,
-      roughness: 0.6,
-      metalness: 0,
-      clearcoat: 0.7,
-      clearcoatRoughness: 0.24,
-      reflectivity: 0.42,
-      sheen: 0.18,
-      sheenColor: new THREE.Color("#d07a5c"),
-      sheenRoughness: 0.7,
-      transparent: true,
-    });
-    applyWaxScattering(m, { color: "#ef7042", strength: 0.85 });
-    return m;
-  }, [rough, albedo]);
-
-  useEffect(
-    () => () => {
-      rough.dispose();
-      albedo.dispose();
-      material.dispose();
-      geometry.dispose();
-    },
-    [rough, albedo, material, geometry],
-  );
-
-  useFrame((state, delta) => {
-    const g = group.current;
-    if (!g) return;
-    const t = state.clock.elapsedTime;
-    const p = progress.current;
-
-    // Present for the opening, gone by the photographs. Faded rather than
-    // switched off, so it leaves rather than disappears.
-    const life = 1 - smoothstep(0.2, 0.34, p);
-    material.opacity = life;
-    g.visible = life > 0.01;
-    if (!g.visible) return;
-
-    // Follows the cursor across the page and keeps turning when it stops,
-    // so it reads as an object being looked at rather than a sprite.
-    momentum.current += (state.pointer.x * 1.6 - spin.current) * 0.02;
-    momentum.current *= 0.9;
-    spin.current += momentum.current;
-
-    g.rotation.y = spin.current + Math.sin(t * 0.25) * 0.28;
-    g.rotation.x = THREE.MathUtils.damp(g.rotation.x, -state.pointer.y * 0.3, 3, delta);
-
-    // Out in the right margin and well behind the page, where a guest reading
-    // the invitation can see it turning but never has to read around it.
-    g.position.set(4.05 + state.pointer.x * 0.28, 2.2 - p * 7, -3.1);
-    g.scale.setScalar(0.5 * life);
-  });
-
-  return (
-    <group ref={group}>
-      <mesh geometry={geometry} material={material} />
-    </group>
-  );
-}
-
-function smoothstep(a: number, b: number, x: number) {
-  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
-  return t * t * (3 - 2 * t);
-}
-
 /** Light that turns from candle to dusk as the evening goes on. */
 function Evening({ progress }: { progress: RefObject<number> }) {
   const key = useRef<THREE.DirectionalLight>(null);
@@ -216,8 +114,11 @@ function Evening({ progress }: { progress: RefObject<number> }) {
       <ambientLight ref={ambient} intensity={0.42} color="#fff5e6" />
       <directionalLight ref={key} position={[-2.6, 3, 2.4]} intensity={2.4} color="#fff0d6" />
       <directionalLight position={[2.8, -1.2, 1.6]} intensity={0.45} color="#fdf3e4" />
-      {/* Behind the world, for the wax to glow through. */}
-      <directionalLight position={[1.4, 1.2, -4]} intensity={1.3} color="#ff9a5c" />
+      {/* A back light, so the petals glow through the way a real blossom does
+          against the sky. It was #ff9a5c at 1.3 when it existed to drive the
+          wax seal's subsurface — the seal is gone and that light was cooking
+          every flower terracotta. */}
+      <directionalLight position={[1.4, 1.2, -4]} intensity={0.75} color="#ffe6d8" />
     </>
   );
 }
@@ -225,9 +126,12 @@ function Evening({ progress }: { progress: RefObject<number> }) {
 export function WorldScene({
   progress,
   lowPower,
+  blossom,
 }: {
   progress: RefObject<number>;
   lowPower: boolean;
+  /** A real modelled branch, if one has been dropped into /public/models. */
+  blossom?: string | null;
 }) {
   const layers = lowPower ? [24, 16] : [30, 24, 18, 12];
 
@@ -257,7 +161,12 @@ export function WorldScene({
           <Drift key={depth} count={count} depth={depth} progress={progress} />
         ))}
 
-        <FloatingSeal progress={progress} />
+        {/* A branch down each edge, growing as the page is read. They stand
+            in for two wax seals: one at the foot of the page and one that
+            drifted down the right-hand side and spent the middle of the
+            document sitting on top of the photographs. */}
+        <BlossomBranch side="left" progress={progress} lowPower={lowPower} model={blossom} />
+        <BlossomBranch side="right" progress={progress} lowPower={lowPower} model={blossom} />
       </Suspense>
     </Canvas>
   );

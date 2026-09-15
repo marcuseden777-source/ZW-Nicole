@@ -23,7 +23,7 @@ const WorldScene = dynamic(
  * It mounts only after the door is open (nothing should compete with the
  * letter) and only where the device asked for it.
  */
-export function World() {
+export function World({ blossom }: { blossom?: string | null }) {
   const capability = useCapability();
   const { progress } = usePageScroll();
   const [entered, setEntered] = useState(hasEntered);
@@ -38,7 +38,7 @@ export function World() {
 
   return (
     <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true" data-no-print>
-      <WorldScene progress={progress} lowPower={capability.lowPower} />
+      <WorldScene progress={progress} lowPower={capability.lowPower} blossom={blossom} />
     </div>
   );
 }

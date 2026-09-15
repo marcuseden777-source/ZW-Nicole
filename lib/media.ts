@@ -530,6 +530,31 @@ export function readDayGallery(): Promise<Photo[]> {
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
+ *  M O D E L S
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * A real 3D asset, if one has been dropped in.
+ *
+ * The blossom down each edge of the page is modelled in code, which is a
+ * stand-in: geometry written by hand reaches "recognisably a flower" quickly
+ * and "beautiful" slowly, and a photographed branch converted to a mesh is
+ * better than either at a fraction of the effort.
+ *
+ * So: put a GLB at /public/models/blossom.glb and it is used instead, with no
+ * other change anywhere. Same bargain as the photographs and the films —
+ * the file appearing in the folder is the whole installation.
+ */
+export function readBlossomModel(): string | null {
+  try {
+    const file = join(PUBLIC, "models", "blossom.glb");
+    return statSync(file).size > 0 ? "/models/blossom.glb" : null;
+  } catch {
+    return null;
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
  *  F I L M S
  * ─────────────────────────────────────────────────────────────────────────── */
 
