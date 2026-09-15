@@ -2,6 +2,7 @@ import { Diagnostics } from "@/components/Diagnostics";
 import { EntryGate } from "@/components/EntryGate";
 import { World } from "@/components/World";
 import { SkipLink } from "@/components/SkipLink";
+import { SoundTrack } from "@/components/SoundTrack";
 import { GateBoundary } from "@/components/GateBoundary";
 import { Nav } from "@/components/Nav";
 import { SmoothScroll } from "@/components/SmoothScroll";
@@ -20,7 +21,14 @@ import { Venue } from "@/components/sections/Venue";
 import { Welcome } from "@/components/sections/Welcome";
 import * as content from "@/content/wedding";
 import type { Phase } from "@/content/wedding";
-import { readAmbient, readBlossomModel, readDayGallery, readGallery } from "@/lib/media";
+import {
+  hasSoundtrack,
+  readAmbient,
+  readBlossomModel,
+  readDayGallery,
+  readGallery,
+  readSoundtrack,
+} from "@/lib/media";
 
 /**
  * Which life the site is living. The hosting dashboard can override the
@@ -47,6 +55,7 @@ export default async function Page() {
   const [photos, dayPhotos] = await Promise.all([readGallery(), readDayGallery()]);
   const films = readAmbient();
   const blossom = readBlossomModel();
+  const soundtrack = readSoundtrack();
 
   // The three full-bleed pauses choose their own photographs, so nobody ever
   // has to name a file — and they keep choosing sensibly as pictures are
@@ -180,6 +189,12 @@ export default async function Page() {
       </div>
 
       <StructuredData />
+
+      {/* The recording, and the button that stops it. Rendered only when
+          the files are actually there. */}
+      {hasSoundtrack(soundtrack) && (
+        <SoundTrack sources={soundtrack} label={content.soundtrack.label} />
+      )}
 
       {/* Only ever visible with ?debug in the address. */}
       <Diagnostics />

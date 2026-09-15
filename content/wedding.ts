@@ -278,6 +278,21 @@ export const galleryEmpty = {
 export const filmUrl = "";
 
 /* ───────────────────────────────────────────────────────────────────────────
+ *  T H E   R E C O R D I N G
+ *
+ *  Put the audio in /public/audio as blessing.m4a and blessing.webm and it
+ *  plays from the moment the envelope is opened — that tap is what lets a
+ *  browser make sound at all. Take the files away and the control disappears
+ *  with them; nothing else needs changing.
+ *
+ *  `label` is what the button says and what a screen reader reads out, so
+ *  write it as a description of the recording rather than as a filename.
+ * ─────────────────────────────────────────────────────────────────────────── */
+export const soundtrack = {
+  label: "Mum singing",
+};
+
+/* ───────────────────────────────────────────────────────────────────────────
  * 12.  M E S S A G E S   F R O M   G U E S T S      (phase "keepsake")
  * ─────────────────────────────────────────────────────────────────────────── */
 export const guestbook: { from: string; message: string }[] = [];

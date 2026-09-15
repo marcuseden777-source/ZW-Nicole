@@ -530,6 +530,39 @@ export function readDayGallery(): Promise<Photo[]> {
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
+ *  S O U N D
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+export type Soundtrack = { m4a?: string; webm?: string };
+
+/**
+ * The recording, if there is one.
+ *
+ * Two encodings of the same take: webm/opus is smaller and every modern
+ * browser but Safari prefers it, m4a/aac is what Safari and every phone will
+ * take. The <audio> element picks; whichever is missing is simply not offered.
+ *
+ * Nothing renders at all when the folder is empty, so the control never
+ * appears pointing at silence.
+ */
+export function readSoundtrack(): Soundtrack {
+  const pick = (name: string) => {
+    try {
+      return statSync(join(PUBLIC, "audio", name)).size > 0
+        ? `/audio/${name}`
+        : undefined;
+    } catch {
+      return undefined;
+    }
+  };
+  return { webm: pick("blessing.webm"), m4a: pick("blessing.m4a") };
+}
+
+export function hasSoundtrack(track: Soundtrack) {
+  return Boolean(track.m4a || track.webm);
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
  *  M O D E L S
  * ─────────────────────────────────────────────────────────────────────────── */
 

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { setEntered } from "./entryState";
 import { releaseScrollLock, takeScrollLock } from "./scrollLock";
+import { playSoundtrack } from "@/lib/soundtrack";
 
 export type GateStage = "sealed" | "opening" | "entering" | "done";
 
@@ -89,6 +90,13 @@ export function useEntryGate({
   }, [ready, reducedMotion, rememberForSession]);
 
   const open = useCallback(() => {
+    // Straight into the sound module, in the same tick as the tap. iOS only
+    // honours play() when it is called synchronously inside the gesture that
+    // asked for it, and routing this through state and an effect puts a
+    // render in between — which Safari refuses. It resolves later and is
+    // deliberately not awaited: whether the recording starts must never hold
+    // up the envelope opening.
+    void playSoundtrack();
     setStage((current) => (current === "sealed" ? "opening" : current));
   }, []);
 
