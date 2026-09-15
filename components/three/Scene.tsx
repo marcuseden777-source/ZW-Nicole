@@ -1,7 +1,7 @@
 "use client";
 
-import { ContactShadows, Environment, Lightformer } from "@react-three/drei";
-import { Canvas } from "@react-three/fiber";
+import { Environment, Lightformer } from "@react-three/drei";
+import { Canvas, useThree } from "@react-three/fiber";
 import { Suspense, type RefObject } from "react";
 import * as THREE from "three";
 
@@ -24,6 +24,38 @@ type Props = {
  * fetched at runtime — the invitation opens the same on a plane, on hotel
  * wifi, or on nothing but a phone signal at the venue.
  */
+
+/**
+ * The paper, cut to the screen.
+ *
+ * The envelope used to be a fixed 1 x 1.45 card floating in the middle of a
+ * cream field, which is a picture OF an envelope on a website. The screen is
+ * the letter: the paper takes the shape of whatever it is being read on, so a
+ * phone gets a portrait envelope and a laptop a landscape one — which is what
+ * a real envelope does anyway, since you turn it to suit your hand.
+ *
+ * The bleed is there so a rounded corner, the slight tilt each flap sits at,
+ * or a sub-pixel rounding error can never leave a hairline of page colour
+ * down an edge. 2% was not enough — the corner radius alone ate it.
+ */
+function FittedEnvelope({
+  progress,
+  monogram,
+}: {
+  progress: RefObject<number>;
+  monogram: string;
+}) {
+  // Viewport in world units at z = 0, which is the plane the paper sits on.
+  const { viewport } = useThree();
+  return (
+    <Envelope
+      openness={progress}
+      monogram={monogram}
+      width={viewport.width * 1.14}
+      height={viewport.height * 1.14}
+    />
+  );
+}
 export function Scene({ progress, monogram, petalCount, lowPower }: Props) {
   return (
     <Canvas
@@ -61,10 +93,13 @@ export function Scene({ progress, monogram, petalCount, lowPower }: Props) {
           // Framed tightly around the envelope: a shadow camera any wider
           // spends its resolution on empty space and the seal's shadow
           // arrives as a staircase.
-          shadow-camera-left={-2.4}
-          shadow-camera-right={2.4}
-          shadow-camera-top={3}
-          shadow-camera-bottom={-3}
+          // Wide enough for a letter that now fills a laptop screen. Framed
+          // tighter than this and the seal's own shadow walks off the edge of
+          // the shadow map on a wide display.
+          shadow-camera-left={-6}
+          shadow-camera-right={6}
+          shadow-camera-top={6}
+          shadow-camera-bottom={-6}
           shadow-camera-near={0.5}
           shadow-camera-far={12}
           shadow-bias={-0.0002}
@@ -102,29 +137,15 @@ export function Scene({ progress, monogram, petalCount, lowPower }: Props) {
           </Environment>
         )}
 
-        {/* An invisible plane that catches nothing but the envelope's shadow,
-            so the page's own background still shows through around it. */}
-        {!lowPower && (
-          <mesh position={[0, 0, -1.1]} receiveShadow>
-            <planeGeometry args={[4, 5]} />
-            <shadowMaterial opacity={0.17} color="#6b5334" />
-          </mesh>
-        )}
+        {/* The shadow-catching plane and the contact shadow that used to sit
+            here were both shadows cast onto a surface behind the envelope.
+            There is no behind any more — the paper fills the frame — so they
+            were darkening nothing and costing a render pass to do it. What is
+            left is the envelope's shadows on ITSELF: one flap over the next,
+            and the wax onto the paper, which is all that was ever doing the
+            work. */}
 
-        {!lowPower && (
-          <ContactShadows
-            position={[0, -1.15, 0]}
-            rotation={[-Math.PI / 2, 0, 0]}
-            scale={4}
-            blur={3}
-            opacity={0.3}
-            far={1.6}
-            resolution={256}
-            color="#6b5334"
-          />
-        )}
-
-        <Envelope openness={progress} monogram={monogram} />
+        <FittedEnvelope progress={progress} monogram={monogram} />
         {petalCount > 0 && <Petals count={petalCount} openness={progress} />}
       </Suspense>
     </Canvas>

@@ -13,10 +13,14 @@ import {
 import { applyWaxScattering, buildWaxGeometry } from "@/lib/waxSeal";
 import { envelope as envelopeStyle } from "@/content/wedding";
 
-const W = 1;
-const H = 1.45;
-const FLAP_OVERLAP = 0.04;
-const SEAL_RADIUS = 0.13;
+/* The envelope's canonical proportions, kept only as the fallback. The real
+   size arrives as props: the screen IS the letter, so the paper takes the
+   shape of whatever it is being read on — portrait on a phone, landscape on
+   a laptop, exactly as a real envelope would be turned to suit the hand
+   holding it. */
+const DEFAULT_W = 1;
+const DEFAULT_H = 1.45;
+const FLAP_OVERLAP_RATIO = 0.04;
 
 /* ── Shapes ──────────────────────────────────────────────────────────────── */
 
@@ -57,6 +61,10 @@ function flapShape(halfWidth: number, depth: number, apexBleed: number) {
 /* ── Component ───────────────────────────────────────────────────────────── */
 
 type Props = {
+  /** Paper width in world units. The scene measures the viewport and passes it. */
+  width?: number;
+  /** Paper height in world units. */
+  height?: number;
   /**
    * Live scroll position through the hero: 0 is sealed and whole, 1 is the
    * seal broken and the flap fully open.
@@ -69,7 +77,36 @@ type Props = {
   monogram: string;
 };
 
-export function Envelope({ openness, monogram }: Props) {
+export function Envelope({
+  openness,
+  monogram,
+  width: W = DEFAULT_W,
+  height: H = DEFAULT_H,
+}: Props) {
+  // Everything that is a physical thickness rather than a proportion — the
+  // stock of the paper, the height of the wax, the gap between one flap and
+  // the next — is scaled off the short edge. Otherwise a letter filling a
+  // laptop screen is made of foil and the seal is a speck on it.
+  const unit = Math.min(W, H);
+  const FLAP_OVERLAP = FLAP_OVERLAP_RATIO * unit;
+  const SEAL_RADIUS = 0.13 * unit;
+  const T = unit; // paper-thickness scale
+
+  // Where the front face of the closed top flap actually is. The wax has to
+  // sit ON that face, and this has now been wrong twice — once as a hardcoded
+  // 0.051 that was six ten-thousandths BEHIND the paper, and once as a
+  // hardcoded 0.061 that cleared it at one aspect ratio and not at another,
+  // because the paper's thickness scales with the screen and the magic number
+  // did not. Stating it as the flap's own numbers plus a margin means it
+  // cannot drift again: change the stock and the wax follows it.
+  //
+  // The margin is 0.045 rather than a hair because the flap's apex is not
+  // flat: flapShape curves it, and the bevel rolls that curve FORWARD, so the
+  // frontmost point of the paper is the very tip that lands under the wax.
+  const FLAP_Z = 0.039;
+  const FLAP_DEPTH = 0.009;
+  const FLAP_BEVEL = 0.004;
+  const SEAL_Z = (FLAP_Z + FLAP_DEPTH + FLAP_BEVEL + 0.045) * T;
   const group = useRef<THREE.Group>(null);
   const flap = useRef<THREE.Group>(null);
   const sealLeft = useRef<THREE.Group>(null);
@@ -160,39 +197,39 @@ export function Envelope({ openness, monogram }: Props) {
   );
 
   const geometries = useMemo(() => {
-    const back = new THREE.ExtrudeGeometry(roundedRect(W, H, 0.05), {
-      depth: 0.016,
+    const back = new THREE.ExtrudeGeometry(roundedRect(W, H, 0.05 * unit), {
+      depth: 0.016 * T,
       bevelEnabled: true,
-      bevelThickness: 0.004,
-      bevelSize: 0.004,
+      bevelThickness: 0.004 * T,
+      bevelSize: 0.004 * T,
       bevelSegments: 3,
       curveSegments: 16,
     });
 
     const side = new THREE.ExtrudeGeometry(flapShape(H / 2, W / 2, FLAP_OVERLAP), {
-      depth: 0.008,
+      depth: 0.008 * T,
       bevelEnabled: true,
-      bevelThickness: 0.0035,
-      bevelSize: 0.0035,
+      bevelThickness: 0.0035 * T,
+      bevelSize: 0.0035 * T,
       bevelSegments: 3,
       curveSegments: 20,
     });
 
     const bottom = new THREE.ExtrudeGeometry(flapShape(W / 2, H * 0.42, FLAP_OVERLAP), {
-      depth: 0.008,
+      depth: 0.008 * T,
       bevelEnabled: true,
-      bevelThickness: 0.0035,
-      bevelSize: 0.0035,
+      bevelThickness: 0.0035 * T,
+      bevelSize: 0.0035 * T,
       bevelSegments: 3,
       curveSegments: 20,
     });
 
     // The top flap is hinged, so its geometry hangs from its own origin.
     const top = new THREE.ExtrudeGeometry(flapShape(W / 2, H * 0.46, FLAP_OVERLAP), {
-      depth: 0.009,
+      depth: FLAP_DEPTH * T,
       bevelEnabled: true,
-      bevelThickness: 0.004,
-      bevelSize: 0.004,
+      bevelThickness: FLAP_BEVEL * T,
+      bevelSize: FLAP_BEVEL * T,
       bevelSegments: 2,
       curveSegments: 20,
     });
@@ -217,12 +254,12 @@ export function Envelope({ openness, monogram }: Props) {
     }).geometry;
 
     const invitationCard = new THREE.ExtrudeGeometry(
-      roundedRect(W * 0.9, H * 0.82, 0.02),
-      { depth: 0.006, bevelEnabled: false, curveSegments: 12 },
+      roundedRect(W * 0.9, H * 0.82, 0.02 * unit),
+      { depth: 0.006 * T, bevelEnabled: false, curveSegments: 12 },
     );
 
     return { back, side, bottom, top, sealL, sealR, invitationCard };
-  }, [monogram]);
+  }, [monogram, W, H, T, unit, FLAP_OVERLAP, SEAL_RADIUS, FLAP_DEPTH, FLAP_BEVEL]);
 
   useEffect(
     () => () => Object.values(geometries).forEach((g) => g.dispose()),
@@ -309,7 +346,7 @@ export function Envelope({ openness, monogram }: Props) {
       <mesh geometry={geometries.back} material={paper} castShadow receiveShadow />
 
       {/* The invitation, waiting inside */}
-      <group ref={card} position={[0, 0, 0.0175]}>
+      <group ref={card} position={[0, 0, 0.0175 * T]}>
         <mesh geometry={geometries.invitationCard} castShadow receiveShadow>
           <meshPhysicalMaterial
             color="#fffaf1"
@@ -325,20 +362,20 @@ export function Envelope({ openness, monogram }: Props) {
       {/* Left and right folded panels. The rotation has to carry each apex
           *inward* to the seal — turned the other way, the panels splay out
           past the edges and the envelope stops being a rectangle. */}
-      <group position={[-W / 2, 0, 0.023]} rotation={[-0.06, 0, Math.PI / 2]}>
+      <group position={[-W / 2, 0, 0.023 * T]} rotation={[-0.06, 0, Math.PI / 2]}>
         <mesh geometry={geometries.side} material={paper} castShadow receiveShadow />
       </group>
-      <group position={[W / 2, 0, 0.023]} rotation={[-0.045, 0, -Math.PI / 2]}>
+      <group position={[W / 2, 0, 0.023 * T]} rotation={[-0.045, 0, -Math.PI / 2]}>
         <mesh geometry={geometries.side} material={paper} castShadow receiveShadow />
       </group>
 
       {/* Bottom panel */}
-      <group position={[0, -H / 2, 0.031]} rotation={[-0.055, 0, Math.PI]}>
+      <group position={[0, -H / 2, 0.031 * T]} rotation={[-0.055, 0, Math.PI]}>
         <mesh geometry={geometries.bottom} material={paper} castShadow receiveShadow />
       </group>
 
       {/* Top panel — hinged at the fold */}
-      <group ref={flap} position={[0, H / 2, 0.039]}>
+      <group ref={flap} position={[0, H / 2, FLAP_Z * T]}>
         <mesh geometry={geometries.top} material={paper} castShadow receiveShadow />
       </group>
 
@@ -353,7 +390,7 @@ export function Envelope({ openness, monogram }: Props) {
           the wax and drew a cream triangle over the monogram. Wax is poured
           on top of a closed envelope; this is where it goes, with enough
           clearance that the flap's own bevel cannot graze the thin rim. */}
-      <group position={[0, 0, 0.061]}>
+      <group position={[0, 0, SEAL_Z]}>
         {(
           [
             [sealLeft, geometries.sealL, "left"] as const,
