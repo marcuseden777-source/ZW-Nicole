@@ -111,6 +111,39 @@ export const story = {
 };
 
 /* ───────────────────────────────────────────────────────────────────────────
+ *  5b.  T H E   P A U S E S
+ *
+ *  Three places where the page stops talking and gives you a photograph,
+ *  floor to ceiling. They take their pictures from /public/gallery on their
+ *  own — you never have to name a file — so they keep working as photographs
+ *  are added or removed.
+ *
+ *  `line` is what is written across the bottom. Leave it empty ("") and the
+ *  photograph is shown with nothing on it at all, which is often the stronger
+ *  of the two. Keep them SHORT: this is set very large, and anything past
+ *  about six words stops being a line and starts being a paragraph.
+ *
+ *  These are drafts written from the story above. Say them out loud and change
+ *  anything that does not sound like the two of you.
+ * ─────────────────────────────────────────────────────────────────────────── */
+export const interludes = [
+  {
+    eyebrow: "Two thousand and twelve",
+    line: "Ten years of almost meeting.",
+  },
+  {
+    // Nothing written on this one — by the time a guest reaches it they have
+    // just come out of the album, and another line of type would be noise.
+    eyebrow: "",
+    line: "",
+  },
+  {
+    eyebrow: "Phuket, two thousand and twenty-two",
+    line: "And everything after.",
+  },
+];
+
+/* ───────────────────────────────────────────────────────────────────────────
  *  6.  T H E   D A Y,   H O U R   B Y   H O U R
  * ─────────────────────────────────────────────────────────────────────────── */
 export const timeline = [

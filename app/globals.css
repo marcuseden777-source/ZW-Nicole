@@ -417,6 +417,14 @@ html.motion-on [data-m] {
   transform: scale(calc(1.14 - var(--e) * 0.14 + var(--p) * 0.07));
 }
 
+/* A full-bleed photograph the page travels across. The picture is taller than
+   its frame by 12% at each end, and slides at most 9% of that — so the eye
+   moves over the image rather than past it, and it can never slide far enough
+   to show an edge. */
+[data-m~="pan"] [data-m-inner] {
+  transform: translate3d(0, calc((var(--p) - 0.5) * 18%), 0);
+}
+
 /* A focus pull. Expensive on a large area — used only where it earns it. */
 [data-m~="focus"] {
   filter: blur(calc((1 - var(--e)) * 7px));
@@ -481,6 +489,7 @@ html.candle-on body::after {
 
   [data-m~="drift"],
   [data-m~="push"] [data-m-inner],
+  [data-m~="pan"] [data-m-inner],
   [data-m~="reveal"] [data-m-inner] {
     transform: none !important;
   }

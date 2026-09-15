@@ -10,6 +10,7 @@ import { Carousel } from "@/components/sections/Carousel";
 import { Countdown } from "@/components/sections/Countdown";
 import { Faq } from "@/components/sections/Faq";
 import { Hero } from "@/components/sections/Hero";
+import { Interlude } from "@/components/sections/Interlude";
 import { Gallery, Guestbook } from "@/components/sections/Keepsake";
 import { Library } from "@/components/sections/Library";
 import { Rsvp } from "@/components/sections/Rsvp";
@@ -45,6 +46,20 @@ export default async function Page() {
   // of the wedding itself, which the keepsake wall shows afterwards.
   const [photos, dayPhotos] = await Promise.all([readGallery(), readDayGallery()]);
   const films = readAmbient();
+
+  // The three full-bleed pauses choose their own photographs, so nobody ever
+  // has to name a file — and they keep choosing sensibly as pictures are
+  // added or removed. Landscape only, because a portrait crop stretched
+  // across a whole screen is a crop of somebody's shoulder; and drawn from
+  // past the eighth, so a pause is never the picture the reel just showed.
+  const later = photos.slice(8);
+  const wide = later.filter((p) => p.orientation === "landscape");
+  const pool = wide.length >= content.interludes.length ? wide : later.length ? later : photos;
+  const pause = (n: number) =>
+    pool.length
+      ? pool[Math.min(pool.length - 1, Math.floor(((n + 0.5) * pool.length) / content.interludes.length))]
+      : undefined;
+  const bothNames = `${content.couple.partnerOne.name} and ${content.couple.partnerTwo.name}`;
 
   return (
     <>
@@ -110,11 +125,29 @@ export default async function Page() {
 
         {phase === "invitation" && <Countdown />}
 
+        {/* The first pause. After the counting, before the telling. */}
+        <Interlude
+          photo={pause(0)}
+          eyebrow={content.interludes[0]?.eyebrow}
+          line={content.interludes[0]?.line}
+          alt={bothNames}
+        />
+
         <Story film={films.silk ?? null} />
         {/* The reel is a taster on a turning arc — right for a handful and
             wrong for a hundred. Everything else is in the Album below it. */}
         <Carousel photos={photos.slice(0, 8)} />
         <Library photos={photos} />
+
+        {/* The second. Wordless on purpose — a guest has just come out of
+            twenty-six photographs, and another line of type would be noise. */}
+        <Interlude
+          photo={pause(1)}
+          eyebrow={content.interludes[1]?.eyebrow}
+          line={content.interludes[1]?.line}
+          alt={bothNames}
+          height="68svh"
+        />
 
         {phase === "invitation" ? (
           <>
@@ -131,6 +164,15 @@ export default async function Page() {
             <Venue phase={phase} />
           </>
         )}
+
+        {/* The last. After the asking and before the last word, so the piece
+            finishes on the two of them rather than on a button. */}
+        <Interlude
+          photo={pause(2)}
+          eyebrow={content.interludes[2]?.eyebrow}
+          line={content.interludes[2]?.line}
+          alt={bothNames}
+        />
         </main>
 
         <Closing phase={phase} film={films.letter ?? null} />
